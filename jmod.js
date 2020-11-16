@@ -2,7 +2,10 @@
 	const w = window;
 	if (w.__jmod === true) return;
 	w.__jmod = true;
-	if (typeof w.ImportBondageCollege !== "function") return;
+	if (typeof w.ImportBondageCollege !== "function") {
+		alert("Club not detected! Please only use this while you have Club open!");
+		return;
+	}
 
 	function InfoBeep(msg) {
 		console.log("Jmod msg:", msg);
