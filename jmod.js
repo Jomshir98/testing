@@ -37,6 +37,35 @@
 		});
 	}
 
+	function j_IsCloth(item) {
+		if (item.Asset) item = item.Asset;
+		return item.Group.Category === "Appearance" && item.Group.AllowNone && item.Group.Clothing && !item.Group.BodyCosplay;
+	}
+
+	function j_IsBind(item) {
+		if (item.Asset) item = item.Asset;
+		if (item.Group.Category !== "Item" || item.Group.BodyCosplay) return false;
+		return !["ItemNeck", "ItemNeckAccessories", "ItemNeckRestraints"].includes(item.Group.Name);
+	}
+
+	function j_SwapCharacterClothesAndBinds(C1, C2) {
+		const o1 = C1.Appearance.filter(i => j_IsCloth(i) || j_IsBind(i));
+		C1.Appearance = C1.Appearance.filter(i => !j_IsCloth(i) && !j_IsBind(i));
+		const o2 = C2.Appearance.filter(i => j_IsCloth(i) || j_IsBind(i));
+		C2.Appearance = C2.Appearance.filter(i => !j_IsCloth(i) && !j_IsBind(i));
+		C1.Appearance = C1.Appearance.concat(o2);
+		C2.Appearance = C2.Appearance.concat(o1);
+		const tp = C1.Pose;
+		C1.Pose = C2.Pose;
+		C2.Pose = tp;
+
+		w.CharacterRefresh(C1);
+		w.CharacterRefresh(C2);
+		w.ChatRoomCharacterUpdate(C1);
+		w.ChatRoomCharacterUpdate(C2);
+	}
+	w.j_SwapCharacterClothesAndBinds = j_SwapCharacterClothesAndBinds;
+
 	// Controlable patches
 
 	const o_SpeechGarble = w.SpeechGarble;
@@ -104,7 +133,7 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 	// Wardrobe
 
 	function j_WardrobeExportSelectionClothes() {
-		const save = w.CharacterAppearanceSelection.Appearance.filter(a => a.Asset.Group.Category === "Appearance" && a.Asset.Group.Clothing).map(w.WardrobeAssetBundle);
+		const save = w.CharacterAppearanceSelection.Appearance.filter(j_IsCloth).map(w.WardrobeAssetBundle);
 		return LZString.compressToBase64(JSON.stringify(save));
 	}
 
@@ -122,7 +151,7 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 		C.Appearance = C.Appearance.filter(a => a.Asset.Group.Category !== "Appearance" || !a.Asset.Group.AllowNone || !a.Asset.Group.Clothing);
 		for (const cloth of data) {
 			if (C.Appearance.some(a => a.Asset.Group.Name === cloth.Group)) continue;
-			const A = w.Asset.find(a => a.Group.Name === cloth.Group && a.Group.Category === "Appearance" && a.Group.Clothing && a.Name === cloth.Name);
+			const A = w.Asset.find(a => a.Group.Name === cloth.Group && j_IsCloth(a) && a.Name === cloth.Name);
 			if (A != null) {
 				w.CharacterAppearanceSetItem(C, cloth.Group, A, cloth.Color, 0, null, false);
 				const item = w.InventoryGet(C, cloth.Group);
