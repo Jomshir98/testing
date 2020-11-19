@@ -1,4 +1,5 @@
 (function () {
+	"use strict";
 	const w = window;
 	if (w.__jmod === true) return;
 	w.__jmod = true;
@@ -72,7 +73,7 @@
 			ChatRoomSendLocal(`Jmod commands:
 .help - display this help [alias: . ]
 .action [action] - send custom (action) [alias: .a ]
-.antigarble [0|1|2] - set garble prevention to: none|show both|show original (only affects received messages!)
+.antigarble [0|1|2] - set garble prevention to show [garbled|both|ungarbled] messages (only affects received messages!)
 .patches - show info about currently applied patches
 `);
 		} else if (cmd === "a" || cmd === "action") {
@@ -89,6 +90,7 @@
 AsylumEntranceCanWander - Always can move in asylum
 CheatAllow - Enable built-in cheats
 LoginMistressItems - Mistress-only items are always available
+LoginStableItems - Stable exam items are always available
 InputChatMaxLength - Message limit increased to 1000 from 250
 WardrobeIO - Import and export buttons in wardrobe for current clothes
 `);
@@ -139,7 +141,7 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 	w.j_WardrobeExportSelectionClothes = j_WardrobeExportSelectionClothes;
 	w.j_WardrobeImportSelectionClothes = j_WardrobeImportSelectionClothes;
 
-	s_AppearanceRun = w.AppearanceRun;
+	const s_AppearanceRun = w.AppearanceRun;
 	w.AppearanceRun = function () {
 		s_AppearanceRun();
 		if (w.CharacterAppearanceMode == "Wardrobe" && clipboardAvailable) {
@@ -148,7 +150,7 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 		}
 	}
 
-	s_AppearanceClick = w.AppearanceClick;
+	const s_AppearanceClick = w.AppearanceClick;
 	w.AppearanceClick = function () {
 		if (w.CharacterAppearanceMode == "Wardrobe" && clipboardAvailable) {
 			// Export
@@ -192,7 +194,22 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 		InventoryAdd(Player, "MistressPadlockKey", "ItemMisc", false);
 		InventoryAdd(Player, "MistressTimerPadlock", "ItemMisc", false);
 	}
-	if (w.Player.Inventory.length > 0) LoginMistressItems();
+
+	w.LoginStableItems = function () {
+		InventoryAdd(Player, "HarnessPonyBits", "ItemMouth", false);
+		InventoryAdd(Player, "HarnessPonyBits", "ItemMouth2", false);
+		InventoryAdd(Player, "HarnessPonyBits", "ItemMouth3", false);
+		InventoryAdd(Player, "PonyBoots", "Shoes", false);
+		InventoryAdd(Player, "PonyBoots", "ItemBoots", false);
+		InventoryAdd(Player, "PonyHood", "ItemHood", false);
+		InventoryAdd(Player, "HoofMittens", "ItemHands", false);
+	}
+
+	if (w.Player.Inventory.length > 0) {
+		w.LoginMistressItems();
+		w.LoginStableItems();
+		w.ServerPlayerInventorySync();
+	}
 
 	const o_ChatRoomCreateElement = w.ChatRoomCreateElement;
 	w.ChatRoomCreateElement = function () {
