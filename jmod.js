@@ -7,6 +7,12 @@
 		return;
 	}
 
+	// Utils
+
+	const clipboardAvailable = Boolean(navigator.clipboard);
+
+	// Tools
+
 	function InfoBeep(msg) {
 		console.log("Jmod msg:", msg);
 		ServerBeep = { MemberNumber: 0, MemberName: "", ChatRoomName: null, Timer: CurrentTime + 3000, Message: msg };
@@ -84,12 +90,88 @@ AsylumEntranceCanWander - Always can move in asylum
 CheatAllow - Enable built-in cheats
 LoginMistressItems - Mistress-only items are always available
 InputChatMaxLength - Message limit increased to 1000 from 250
+WardrobeIO - Import and export buttons in wardrobe for current clothes
 `);
 		} else {
 			ChatRoomSendLocal(`Unknown command ${cmd} - use .help to show commands or two dots to send message starting with a dot`);
 			return false;
 		}
 		return true;
+	}
+
+	// Wardrobe
+
+	function j_WardrobeExportSelectionClothes() {
+		const save = w.CharacterAppearanceSelection.Appearance.filter(a => a.Asset.Group.Category === "Appearance" && a.Asset.Group.Clothing).map(w.WardrobeAssetBundle);
+		return LZString.compressToBase64(JSON.stringify(save));
+	}
+
+	function j_WardrobeImportSelectionClothes(data) {
+		if (typeof data !== "string" || data.length < 1) return "No data";
+		try {
+			if (data[0] !== "[") data = LZString.decompressFromBase64(data);
+			data = JSON.parse(data);
+			if (!Array.isArray(data)) return "Bad data";
+		} catch (error) {
+			console.warn(error);
+			return "Bad data";
+		}
+		const C = w.CharacterAppearanceSelection;
+		C.Appearance = C.Appearance.filter(a => a.Asset.Group.Category !== "Appearance" || !a.Asset.Group.AllowNone || !a.Asset.Group.Clothing);
+		for (const cloth of data) {
+			if (C.Appearance.some(a => a.Asset.Group.Name === cloth.Group)) continue;
+			const A = w.Asset.find(a => a.Group.Name === cloth.Group && a.Group.Category === "Appearance" && a.Group.Clothing && a.Name === cloth.Name);
+			if (A != null) {
+				w.CharacterAppearanceSetItem(C, cloth.Group, A, cloth.Color, 0, null, false);
+				const item = w.InventoryGet(C, cloth.Group);
+				if (cloth.Property && item) {
+					if (item.Property == null) item.Property = {};
+					Object.assign(item.Property, cloth.Property);
+				}
+			} else {
+				console.warn(`Clothing not found: `, cloth);
+			}
+		}
+		w.CharacterLoadCanvas(C);
+		return true;
+	}
+
+	w.j_WardrobeExportSelectionClothes = j_WardrobeExportSelectionClothes;
+	w.j_WardrobeImportSelectionClothes = j_WardrobeImportSelectionClothes;
+
+	s_AppearanceRun = w.AppearanceRun;
+	w.AppearanceRun = function () {
+		s_AppearanceRun();
+		if (w.CharacterAppearanceMode == "Wardrobe" && clipboardAvailable) {
+			DrawButton(1300, 125, 330, 50, "Export", "White", "");
+			DrawButton(1650, 125, 330, 50, "Import", "White", "");
+		}
+	}
+
+	s_AppearanceClick = w.AppearanceClick;
+	w.AppearanceClick = function () {
+		if (w.CharacterAppearanceMode == "Wardrobe" && clipboardAvailable) {
+			// Export
+			if (w.MouseIn(1300, 125, 330, 50)) {
+				window.setTimeout(async () => {
+					await navigator.clipboard.writeText(j_WardrobeExportSelectionClothes());
+					w.CharacterAppearanceWardrobeText = "Copied to clipboard!";
+				}, 0);
+				return;
+			}
+			// Import
+			if (w.MouseIn(1650, 125, 330, 50)) {
+				window.setTimeout(async () => {
+					const data = await navigator.clipboard.readText();
+					const res = j_WardrobeImportSelectionClothes(data);
+					if (res !== true) {
+						w.CharacterAppearanceWardrobeText = `Import error: ${res}`;
+					}
+				}, 0);
+				return;
+			}
+		}
+		s_AppearanceClick();
 	}
 
 	// Common patches
