@@ -122,6 +122,7 @@ LoginMistressItems - Mistress-only items are always available
 LoginStableItems - Stable exam items are always available
 InputChatMaxLength - Message limit increased to 1000 from 250
 WardrobeIO - Import and export buttons in wardrobe for current clothes
+[experimental] ExpressionMenu - New menu for facial expressions
 `);
 		} else {
 			ChatRoomSendLocal(`Unknown command ${cmd} - use .help to show commands or two dots to send message starting with a dot`);
@@ -247,6 +248,85 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 	}
 	if (document.getElementById("InputChat") != null) {
 		document.getElementById("InputChat").setAttribute("maxLength", 1000);
+	}
+
+
+	// Testing stuff
+
+	let DialogFacialExpressionsSelected = -1;
+	const o_DialogLeave = w.DialogLeave;
+	w.DialogLeave = function () {
+		o_DialogLeave();
+		DialogFacialExpressionsSelected = -1;
+	}
+
+	w.DialogDrawExpressionMenu = function () {
+
+		// Draw the expression groups
+		DrawText(DialogFind(Player, "FacialExpression"), 165, 25, "White", "Black");
+		DrawButton(220, 50, 90, 90, "", "White", "Icons/WinkL.png", DialogFind(Player, "WinkLFacialExpressions"));
+		DrawButton(120, 50, 90, 90, "", "White", "Icons/WinkR.png", DialogFind(Player, "WinkRFacialExpressions"));
+		DrawButton(20, 50, 90, 90, "", "White", "Icons/Reset.png", DialogFind(Player, "ClearFacialExpressions"));
+		if (!DialogFacialExpressions || !DialogFacialExpressions.length) DialogFacialExpressionsBuild();
+		for (let I = 0; I < DialogFacialExpressions.length; I++) {
+			const FE = DialogFacialExpressions[I];
+			const OffsetY = 160 + 120 * I;
+
+			if (MouseIn(20, OffsetY, 90, 90)) {
+				DialogFacialExpressionsSelected = I;
+			}
+
+			// Draw the selection of facial expressions at current scroll position
+			DrawButton(20, OffsetY, 90, 90, "", I == DialogFacialExpressionsSelected ? "Cyan" : "White", "Assets/Female3DCG/" + FE.Appearance.Asset.Group.Name + (FE.CurrentExpression ? "/" + FE.CurrentExpression : "") + "/Icon.png");
+
+			if (I == DialogFacialExpressionsSelected) {
+				const ExpressionList = FE.Appearance.Asset.Group.AllowExpression;
+				if (!ExpressionList.includes(null)) ExpressionList.unshift(null);
+				for (let j = 0; j < ExpressionList.length; j++) {
+					const EOffsetY = 160 + 120 * Math.floor(j / 3);
+					const EOffsetX = 155 + 120 * (j % 3);
+					DrawButton(EOffsetX, EOffsetY, 90, 90, "", (ExpressionList[j] == FE.CurrentExpression ? "Pink" : "White"), "Assets/Female3DCG/" + FE.Appearance.Asset.Group.Name + (ExpressionList[j] ? "/" + ExpressionList[j] : "") + "/Icon.png");
+				}
+			}
+		}
+	}
+
+	w.DialogClickExpressionMenu = function () {
+		if (MouseIn(20, 50, 90, 90)) {
+			DialogFacialExpressions.forEach(FE => {
+				CharacterSetFacialExpression(Player, FE.Appearance.Asset.Group.Name);
+				FE.CurrentExpression = null;
+			});
+		} else if (MouseIn(120, 50, 90, 90)) {
+			var EyesExpression = WardrobeGetExpression(Player);
+			var CurrentExpression = DialogFacialExpressions.find(FE => FE.Group == "Eyes").CurrentExpression;
+			CharacterSetFacialExpression(Player, "Eyes1", (EyesExpression.Eyes !== "Closed") ? "Closed" : (CurrentExpression !== "Closed" ? CurrentExpression : null));
+		} else if (MouseIn(220, 50, 90, 90)) {
+			var EyesExpression = WardrobeGetExpression(Player);
+			var CurrentExpression = DialogFacialExpressions.find(FE => FE.Group == "Eyes").CurrentExpression;
+			CharacterSetFacialExpression(Player, "Eyes2", (EyesExpression.Eyes2 !== "Closed") ? "Closed" : (CurrentExpression !== "Closed" ? CurrentExpression : null));
+		} else {
+			for (let I = 0; I < DialogFacialExpressions.length; I++) {
+				if (MouseIn(20, 160 + 120 * I, 90, 90)) {
+					DialogFacialExpressionsSelected = I;
+				}
+			}
+
+			if (DialogFacialExpressionsSelected >= 0 && DialogFacialExpressionsSelected < DialogFacialExpressions.length) {
+				const FE = DialogFacialExpressions[DialogFacialExpressionsSelected];
+
+				const ExpressionList = FE.Appearance.Asset.Group.AllowExpression;
+				if (!ExpressionList.includes(null)) ExpressionList.unshift(null);
+				for (let j = 0; j < ExpressionList.length; j++) {
+					const EOffsetY = 160 + 120 * Math.floor(j / 3);
+					const EOffsetX = 155 + 120 * (j % 3);
+					if (MouseIn(EOffsetX, EOffsetY, 90, 90)) {
+						CharacterSetFacialExpression(Player, FE.Appearance.Asset.Group.Name, ExpressionList[j]);
+						FE.CurrentExpression = ExpressionList[j];
+					}
+				}
+			}
+		}
 	}
 
 	InfoBeep("Jmod loaded!");
