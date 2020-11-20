@@ -293,11 +293,6 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 			const FE = DialogFacialExpressions[I];
 			const OffsetY = 185 + 100 * I;
 
-			// Select expression category on hover
-			if (MouseIn(20, OffsetY, 90, 90)) {
-				DialogFacialExpressionsSelected = I;
-			}
-
 			DrawButton(20, OffsetY, 90, 90, "", I == DialogFacialExpressionsSelected ? "Cyan" : "White", "Assets/Female3DCG/" + FE.Group + (FE.CurrentExpression ? "/" + FE.CurrentExpression : "") + "/Icon.png");
 
 			// Draw the table with expressions
