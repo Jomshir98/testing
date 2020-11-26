@@ -366,4 +366,4 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 	};
 
 	InfoBeep("Jmod loaded!");
-}, 1500);
+}, window.unsafeWindow !== undefined ? 1500 : 0);
