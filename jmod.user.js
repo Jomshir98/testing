@@ -8,13 +8,13 @@
 // @match        https://www.bondageprojects.com/college/*/BondageClub/*
 // @homepage     https://jomshir98.github.io/testing/
 // @updateURL    https://jomshir98.github.io/testing/jmod.user.js
-// @run-at		 document-end
+// @run-at       document-end
 // @grant        unsafeWindow
 // ==/UserScript==
 
-(function () {
+window.setTimeout(function () {
 	"use strict";
-	const w = window;
+	const w = window.unsafeWindow || window;
 	if (w.__jmod === true) return;
 	w.__jmod = true;
 	if (typeof w.ImportBondageCollege !== "function") {
@@ -366,4 +366,4 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 	};
 
 	InfoBeep("Jmod loaded!");
-})();
+}, 1500);
