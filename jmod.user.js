@@ -1,13 +1,13 @@
 // ==UserScript==
 // @name         Jmod - Bondage Club
 // @namespace    jmod
-// @version      1.0.0.1
+// @version      1.0.0.2
 // @description  Jomshir's collection of changes and patches for Bondage Club
 // @author       jomshir98
 // @match        https://www.bondageprojects.elementfx.com/*/BondageClub/*
 // @match        https://www.bondageprojects.com/college/*/BondageClub/*
 // @homepage     https://jomshir98.github.io/testing/
-// @updateURL    https://jomshir98.github.io/testing/jmod.user.js
+// @downloadURL  https://jomshir98.github.io/testing/jmod.user.js
 // @run-at       document-end
 // @grant        unsafeWindow
 // ==/UserScript==
