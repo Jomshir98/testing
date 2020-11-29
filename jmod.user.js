@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Jmod - Bondage Club
 // @namespace    jmod
-// @version      1.0.0.2
+// @version      1.0.1.0
 // @description  Jomshir's collection of changes and patches for Bondage Club
 // @author       jomshir98
 // @match        https://www.bondageprojects.elementfx.com/*/BondageClub/*
@@ -28,6 +28,9 @@ window.setTimeout(function () {
 
 	// Tools
 
+	let j_Allow = false;
+	w.j_Allow = allow => j_Allow = allow;
+
 	function InfoBeep(msg) {
 		console.log("Jmod msg:", msg);
 		ServerBeep = { MemberNumber: 0, MemberName: "", ChatRoomName: null, Timer: CurrentTime + 3000, Message: msg };
@@ -51,9 +54,9 @@ window.setTimeout(function () {
 		});
 	}
 
-	function j_IsCloth(item) {
+	function j_IsCloth(item, allowCosplay = false) {
 		if (item.Asset) item = item.Asset;
-		return item.Group.Category === "Appearance" && item.Group.AllowNone && item.Group.Clothing && !item.Group.BodyCosplay;
+		return item.Group.Category === "Appearance" && item.Group.AllowNone && item.Group.Clothing && (allowCosplay || !item.Group.BodyCosplay);
 	}
 
 	function j_IsBind(item) {
@@ -79,6 +82,17 @@ window.setTimeout(function () {
 		w.ChatRoomCharacterUpdate(C2);
 	}
 	w.j_SwapCharacterClothesAndBinds = j_SwapCharacterClothesAndBinds;
+
+	function j_CopyCharacterClothesAndBinds(TargetCharacter, SourceCharacter) {
+		TargetCharacter.Appearance = TargetCharacter.Appearance.filter(i => !j_IsCloth(i) && !j_IsBind(i));
+		const o2 = SourceCharacter.Appearance.filter(i => j_IsCloth(i) || j_IsBind(i));
+		TargetCharacter.Appearance = TargetCharacter.Appearance.concat(o2);
+		TargetCharacter.Pose = SourceCharacter.Pose;
+
+		w.CharacterRefresh(TargetCharacter);
+		w.ChatRoomCharacterUpdate(TargetCharacter);
+	}
+	w.j_CopyCharacterClothesAndBinds = j_CopyCharacterClothesAndBinds;
 
 	// Controlable patches
 
@@ -147,12 +161,12 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 
 	// Wardrobe
 
-	function j_WardrobeExportSelectionClothes() {
-		const save = w.CharacterAppearanceSelection.Appearance.filter(j_IsCloth).map(w.WardrobeAssetBundle);
+	function j_WardrobeExportSelectionClothes(includeBinds = false) {
+		const save = w.CharacterAppearanceSelection.Appearance.filter(a => j_IsCloth(a, true) || includeBinds && j_IsBind(a)).map(w.WardrobeAssetBundle);
 		return LZString.compressToBase64(JSON.stringify(save));
 	}
 
-	function j_WardrobeImportSelectionClothes(data) {
+	function j_WardrobeImportSelectionClothes(data, force = false) {
 		if (typeof data !== "string" || data.length < 1) return "No data";
 		try {
 			if (data[0] !== "[") data = LZString.decompressFromBase64(data);
@@ -163,10 +177,17 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 			return "Bad data";
 		}
 		const C = w.CharacterAppearanceSelection;
-		C.Appearance = C.Appearance.filter(a => a.Asset.Group.Category !== "Appearance" || !a.Asset.Group.AllowNone || !a.Asset.Group.Clothing);
+
+		if (!force && C.Appearance.some(a => j_IsBind(a) && a.Property?.Effect?.includes("Lock"))) {
+			return "Character is bound";
+		}
+
+		const Allow = a => j_IsCloth(a, CharacterAppearanceSelection.ID === 0) || j_IsBind(a);
+
+		C.Appearance = C.Appearance.filter(a => !Allow(a));
 		for (const cloth of data) {
 			if (C.Appearance.some(a => a.Asset.Group.Name === cloth.Group)) continue;
-			const A = w.Asset.find(a => a.Group.Name === cloth.Group && j_IsCloth(a) && a.Name === cloth.Name);
+			const A = w.Asset.find(a => a.Group.Name === cloth.Group && a.Name === cloth.Name && Allow(a));
 			if (A != null) {
 				w.CharacterAppearanceSetItem(C, cloth.Group, A, cloth.Color, 0, null, false);
 				const item = w.InventoryGet(C, cloth.Group);
@@ -178,7 +199,7 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 				console.warn(`Clothing not found: `, cloth);
 			}
 		}
-		w.CharacterLoadCanvas(C);
+		w.CharacterRefresh(C);
 		return true;
 	}
 
@@ -200,7 +221,7 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 			// Export
 			if (w.MouseIn(1300, 125, 330, 50)) {
 				window.setTimeout(async () => {
-					await navigator.clipboard.writeText(j_WardrobeExportSelectionClothes());
+					await navigator.clipboard.writeText(j_WardrobeExportSelectionClothes(true));
 					w.CharacterAppearanceWardrobeText = "Copied to clipboard!";
 				}, 0);
 				return;
@@ -209,7 +230,7 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 			if (w.MouseIn(1650, 125, 330, 50)) {
 				window.setTimeout(async () => {
 					const data = await navigator.clipboard.readText();
-					const res = j_WardrobeImportSelectionClothes(data);
+					const res = j_WardrobeImportSelectionClothes(data, j_Allow);
 					if (res !== true) {
 						w.CharacterAppearanceWardrobeText = `Import error: ${res}`;
 					}
@@ -264,6 +285,13 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 		document.getElementById("InputChat").setAttribute("maxLength", 1000);
 	}
 
+	// Cheats
+
+	const o_Player_CanChange = w.Player.CanChange;
+	w.Player.CanChange = () => j_Allow || o_Player_CanChange.call(w.Player);
+
+	const o_ChatRoomCanLeave = w.ChatRoomCanLeave;
+	w.ChatRoomCanLeave = () => j_Allow || o_ChatRoomCanLeave();
 
 	// Testing stuff
 
