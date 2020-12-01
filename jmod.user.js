@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Jmod - Bondage Club
 // @namespace    jmod
-// @version      1.0.1.0
+// @version      1.0.1.1
 // @description  Jomshir's collection of changes and patches for Bondage Club
 // @author       jomshir98
 // @match        https://www.bondageprojects.elementfx.com/*/BondageClub/*
@@ -29,7 +29,16 @@ window.setTimeout(function () {
 	// Tools
 
 	let j_Allow = false;
-	w.j_Allow = allow => j_Allow = allow;
+	w.j_Allow = function _j_Allow(allow) {
+		if (typeof allow === "boolean") {
+			j_Allow = allow;
+			if (allow) {
+				console.warn("Cheats enabled; please be careful not to break things");
+			} else {
+				console.info("Cheats disabled");
+			}
+		}
+	};
 
 	function InfoBeep(msg) {
 		console.log("Jmod msg:", msg);
@@ -166,7 +175,7 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 		return LZString.compressToBase64(JSON.stringify(save));
 	}
 
-	function j_WardrobeImportSelectionClothes(data, force = false) {
+	function j_WardrobeImportSelectionClothes(data, includeBinds, force = false) {
 		if (typeof data !== "string" || data.length < 1) return "No data";
 		try {
 			if (data[0] !== "[") data = LZString.decompressFromBase64(data);
@@ -178,11 +187,11 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 		}
 		const C = w.CharacterAppearanceSelection;
 
-		if (!force && C.Appearance.some(a => j_IsBind(a) && a.Property?.Effect?.includes("Lock"))) {
+		if (includeBinds && !force && C.Appearance.some(a => j_IsBind(a) && a.Property?.Effect?.includes("Lock"))) {
 			return "Character is bound";
 		}
 
-		const Allow = a => j_IsCloth(a, CharacterAppearanceSelection.ID === 0) || j_IsBind(a);
+		const Allow = a => j_IsCloth(a, CharacterAppearanceSelection.ID === 0) || includeBinds && j_IsBind(a);
 
 		C.Appearance = C.Appearance.filter(a => !Allow(a));
 		for (const cloth of data) {
@@ -207,33 +216,37 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 	w.j_WardrobeImportSelectionClothes = j_WardrobeImportSelectionClothes;
 
 	const s_AppearanceRun = w.AppearanceRun;
+	let j_WardrobeIncludeBinds = false;
 	w.AppearanceRun = function () {
 		s_AppearanceRun();
 		if (w.CharacterAppearanceMode == "Wardrobe" && clipboardAvailable) {
-			DrawButton(1300, 125, 330, 50, "Export", "White", "");
-			DrawButton(1650, 125, 330, 50, "Import", "White", "");
+			DrawButton(1457, 125, 50, 50, "", "White", j_WardrobeIncludeBinds ? "Icons/Checked.png" : "", "Include restraints");
+			DrawButton(1534, 125, 207, 50, "Export", "White", "");
+			DrawButton(1768, 125, 207, 50, "Import", "White", "");
 		}
 	}
 
 	const s_AppearanceClick = w.AppearanceClick;
 	w.AppearanceClick = function () {
 		if (w.CharacterAppearanceMode == "Wardrobe" && clipboardAvailable) {
+			// Restraints toggle
+			if (w.MouseIn(1457, 125, 50, 50)) {
+				j_WardrobeIncludeBinds = !j_WardrobeIncludeBinds;
+			}
 			// Export
-			if (w.MouseIn(1300, 125, 330, 50)) {
+			if (w.MouseIn(1534, 125, 207, 50)) {
 				window.setTimeout(async () => {
-					await navigator.clipboard.writeText(j_WardrobeExportSelectionClothes(true));
+					await navigator.clipboard.writeText(j_WardrobeExportSelectionClothes(j_WardrobeIncludeBinds));
 					w.CharacterAppearanceWardrobeText = "Copied to clipboard!";
 				}, 0);
 				return;
 			}
 			// Import
-			if (w.MouseIn(1650, 125, 330, 50)) {
+			if (w.MouseIn(1768, 125, 207, 50)) {
 				window.setTimeout(async () => {
 					const data = await navigator.clipboard.readText();
-					const res = j_WardrobeImportSelectionClothes(data, j_Allow);
-					if (res !== true) {
-						w.CharacterAppearanceWardrobeText = `Import error: ${res}`;
-					}
+					const res = j_WardrobeImportSelectionClothes(data, j_WardrobeIncludeBinds, j_Allow);
+					w.CharacterAppearanceWardrobeText = res !== true ? `Import error: ${res}` : "Imported!";
 				}, 0);
 				return;
 			}
