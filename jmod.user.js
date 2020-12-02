@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Jmod - Bondage Club
 // @namespace    jmod
-// @version      1.0.1.1
+// @version      1.0.1.2
 // @description  Jomshir's collection of changes and patches for Bondage Club
 // @author       jomshir98
 // @match        https://www.bondageprojects.elementfx.com/*/BondageClub/*
@@ -244,6 +244,10 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 			// Import
 			if (w.MouseIn(1768, 125, 207, 50)) {
 				window.setTimeout(async () => {
+					if (typeof navigator.clipboard.readText !== "function") {
+						w.CharacterAppearanceWardrobeText = "Please press Ctrl+V";
+						return;
+					}
 					const data = await navigator.clipboard.readText();
 					const res = j_WardrobeImportSelectionClothes(data, j_WardrobeIncludeBinds, j_Allow);
 					w.CharacterAppearanceWardrobeText = res !== true ? `Import error: ${res}` : "Imported!";
@@ -253,6 +257,15 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 		}
 		s_AppearanceClick();
 	}
+	document.addEventListener("paste", ev => {
+		if (CurrentScreen === "Appearance" && CharacterAppearanceMode === "Wardrobe") {
+			ev.preventDefault();
+			ev.stopImmediatePropagation();
+			const data = (ev.clipboardData || window.clipboardData).getData('text');
+			const res = j_WardrobeImportSelectionClothes(data, j_WardrobeIncludeBinds, j_Allow);
+			w.CharacterAppearanceWardrobeText = res !== true ? `Import error: ${res}` : "Imported!";
+		}
+	});
 
 	// Common patches
 	w.AsylumEntranceCanWander = () => true;
