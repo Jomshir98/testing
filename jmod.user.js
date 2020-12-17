@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Jmod - Bondage Club
 // @namespace    jmod
-// @version      1.0.2.1
+// @version      1.0.2.2
 // @description  Jomshir's collection of changes and patches for Bondage Club
 // @author       jomshir98
 // @match        https://www.bondageprojects.elementfx.com/*/BondageClub/*
@@ -30,7 +30,7 @@ window.setTimeout(function () {
 
 	const clipboardAvailable = Boolean(navigator.clipboard);
 
-	const version = "1.0.2.1";
+	const version = "1.0.2.2";
 	const resourceUrl = "https://jomshir98.github.io/testing/Resources";
 
 	if (w.TempCanvas === undefined) {
@@ -57,6 +57,14 @@ window.setTimeout(function () {
 		if (!Img.complete) return false;
 		if (!Img.naturalWidth) return true;
 		MainCanvas.drawImage(DrawAlpha(Img, Alpha), X, Y);
+		return true;
+	}
+
+	function DrawImageResize(Source, X, Y, Width, Height, Alpha) {
+		var Img = DrawGetImage(Source);
+		if (!Img.complete) return false;
+		if (!Img.naturalWidth) return true;
+		MainCanvas.drawImage(DrawAlpha(Img, Alpha), 0, 0, Img.width, Img.height, X, Y, Width, Height);
 		return true;
 	}
 
@@ -230,7 +238,7 @@ window.setTimeout(function () {
 			}
 		} else {
 			if (data?.Type === "Action" && data.Content === "ServerEnter") {
-				j_Announce();
+				j_Announce(true);
 			}
 			return o_ChatRoomMessage(data);
 		}
@@ -265,7 +273,8 @@ window.setTimeout(function () {
 		} else if (msg.startsWith("..")) {
 			document.getElementById("InputChat").value = msg.substr(1);
 		}
-		return o_ChatRoomSendChat();
+		o_ChatRoomSendChat();
+		ChatroomSM.InputEnd();
 	}
 
 	function RunCommand(cmd, rest) {
@@ -293,7 +302,8 @@ LoginMistressItems - Mistress-only items are always available
 LoginStableItems - Stable exam items are always available
 InputChatMaxLength - Message limit increased to 1000 from 250
 WardrobeIO - Import and export buttons in wardrobe for current clothes
-[experimental] ExpressionMenu - New menu for facial expressions
+[beta backport] ExpressionMenu - New menu for facial expressions
+[WIP] Typing indicator
 `);
 		} else {
 			ChatRoomSendLocal(`Unknown command ${cmd} - use .help to show commands or two dots to send message starting with a dot`);
@@ -620,7 +630,7 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 				let target = null;
 				if (value.startsWith("*") || value.startsWith("/me ") || value.startsWith("/emote ") || value.startsWith("/action ")) {
 					type = this.StatusTypes.Emote;
-				} else if (value.startsWith("/")) {
+				} else if (value.startsWith("/") || value.startsWith(".")) {
 					return this.InputEnd();
 				} else if (ChatRoomTargetMemberNumber !== null) {
 					type = this.StatusTypes.Whisper;
@@ -670,14 +680,17 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 			if (char.MemberNumber === src) {
 				if (!char.JMod) {
 					char.JMod = true;
-					console.log(`${char.Name} is using JMod version ${data}`);
+					console.log(`${char.Name} is using JMod version ${data?.version || data}`);
 				}
 			}
 		}
+		if (data?.request) {
+			j_Announce(false);
+		}
 	});
 
-	function j_Announce() {
-		j_SendHiddenMessage("Hello", version);
+	function j_Announce(request = false) {
+		j_SendHiddenMessage("Hello", {version, request});
 	}
 
 	function ChatRoomDrawFriendList(C, Space, Zoom, CharX, CharY) {
@@ -826,20 +839,20 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 				if (ChatRoomCharacter[C].MemberNumber != null) {
 					if (Player.WhiteList.includes(ChatRoomCharacter[C].MemberNumber)) DrawImageResize("Icons/Small/WhiteList.png", CharX + 75 * Zoom, CharY, 50 * Zoom, 50 * Zoom);
 					else if (Player.BlackList.includes(ChatRoomCharacter[C].MemberNumber)) DrawImageResize("Icons/Small/BlackList.png", CharX + 75 * Zoom, CharY, 50 * Zoom, 50 * Zoom);
-					if (ChatRoomData.Admin && ChatRoomData.Admin.includes(ChatRoomCharacter[C].MemberNumber)) DrawImageResize("data:image/png;base64,"+icon_Admin, CharX + 125 * Zoom, CharY, 50 * Zoom, 50 * Zoom);
+					if (ChatRoomData.Admin && ChatRoomData.Admin.includes(ChatRoomCharacter[C].MemberNumber)) DrawImageResize("data:image/png;base64," + icon_Admin, CharX + 125 * Zoom, CharY, 50 * Zoom, 50 * Zoom);
 					// if (Player.FriendList.has(ChatRoomCharacter[C].MemberNumber)) DrawImage("Icons/Small/FriendList.png", (C % 5) * Space + X + 375 * Zoom, Y + Math.floor(C / 5) * 500);
 					if (Player.GhostList.includes(ChatRoomCharacter[C].MemberNumber)) DrawImageResize("Icons/Small/GhostList.png", CharX + 375 * Zoom, CharY, 50 * Zoom, 50 * Zoom);
 					else ChatRoomDrawFriendList(C, Space, Zoom, CharX, CharY);
 
 					switch (ChatRoomCharacter[C].Status) {
 						case ChatroomSM.StatusTypes.Typing:
-							DrawImage("data:image/png;base64,"+icon_Typing, CharX + 375 * Zoom, CharY + 50);
+							DrawImageResize("data:image/png;base64," + icon_Typing, CharX + 375 * Zoom, CharY + 50 * Zoom, 50 * Zoom, 50 * Zoom);
 							break;
 						case ChatroomSM.StatusTypes.Whisper:
-							DrawImage("data:image/png;base64,"+icon_Typing, CharX + 375 * Zoom, CharY + 50, 0.5);
+							DrawImageResize("data:image/png;base64," + icon_Typing, CharX + 375 * Zoom, CharY + 50 * Zoom, 50 * Zoom, 50 * Zoom, 0.5);
 							break;
 						case ChatroomSM.StatusTypes.Emote:
-							DrawImage("data:image/png;base64,"+icon_Emote, CharX + 375 * Zoom, CharY + 50);
+							DrawImageResize("data:image/png;base64," + icon_Emote, CharX + 375 * Zoom, CharY + 50 * Zoom, 50 * Zoom, 50 * Zoom);
 							break;
 					}
 				}
@@ -847,6 +860,6 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 		}
 	}
 
-	j_Announce();
+	j_Announce(true);
 	InfoBeep("Jmod loaded!");
 }, window.unsafeWindow !== undefined ? 1500 : 0);
