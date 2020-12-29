@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Jmod - Bondage Club
 // @namespace    jmod
-// @version      1.0.2.2
+// @version      1.0.2.3
 // @description  Jomshir's collection of changes and patches for Bondage Club
 // @author       jomshir98
 // @match        https://www.bondageprojects.elementfx.com/*/BondageClub/*
@@ -30,7 +30,7 @@ window.setTimeout(function () {
 
 	const clipboardAvailable = Boolean(navigator.clipboard);
 
-	const version = "1.0.2.2";
+	const version = "1.0.2.3";
 	const resourceUrl = "https://jomshir98.github.io/testing/Resources";
 
 	if (w.TempCanvas === undefined) {
@@ -223,6 +223,8 @@ window.setTimeout(function () {
 		});
 	}
 
+	w.j_SendHiddenMessage = j_SendHiddenMessage;
+
 	const hiddenMessageHandlers = new Map();
 
 	w.ChatRoomMessage = function (data) {
@@ -248,6 +250,7 @@ window.setTimeout(function () {
 
 	const o_SpeechGarble = w.SpeechGarble;
 	let antigarble = 0;
+	let antigarble_block = false;
 	w.SpeechGarble = (C, CD) => {
 		if (antigarble === 2) return CD;
 		let res = o_SpeechGarble(C, CD);
@@ -288,7 +291,9 @@ window.setTimeout(function () {
 		} else if (cmd === "a" || cmd === "action") {
 			ChatRoomActionMessage(rest);
 		} else if (cmd === "antigarble") {
-			if (["0", "1", "2"].includes(rest)) {
+			if (antigarble_block) {
+				ChatRoomSendLocal(`Antigarble is blocked!`);
+			} else if (["0", "1", "2"].includes(rest)) {
 				antigarble = Number.parseInt(rest);
 				ChatRoomSendLocal(`Antigarble set to ${antigarble}`);
 			} else {
@@ -302,7 +307,6 @@ LoginMistressItems - Mistress-only items are always available
 LoginStableItems - Stable exam items are always available
 InputChatMaxLength - Message limit increased to 1000 from 250
 WardrobeIO - Import and export buttons in wardrobe for current clothes
-[beta backport] ExpressionMenu - New menu for facial expressions
 [WIP] Typing indicator
 `);
 		} else {
@@ -473,104 +477,6 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 
 	// Testing stuff
 
-	let DialogFacialExpressionsSelected = -1;
-	const o_DialogLeave = w.DialogLeave;
-	w.DialogLeave = function () {
-		o_DialogLeave();
-		DialogFacialExpressionsSelected = -1;
-	}
-
-	w.DialogFacialExpressionsBuild = function () {
-		DialogFacialExpressions = [];
-		for (let I = 0; I < Player.Appearance.length; I++) {
-			const PA = Player.Appearance[I];
-			let ExpressionList = PA.Asset.Group.AllowExpression
-			if (!ExpressionList || !ExpressionList.length || PA.Asset.Group.Name == "Eyes2") continue;
-			ExpressionList = ExpressionList.slice();
-			if (!ExpressionList.includes(null)) ExpressionList.unshift(null);
-			const Item = {};
-			Item.Appearance = PA;
-			Item.Group = PA.Asset.Group.Name;
-			Item.CurrentExpression = (PA.Property == null) ? null : PA.Property.Expression;
-			Item.ExpressionList = ExpressionList;
-			DialogFacialExpressions.push(Item);
-		}
-		// Temporary (?) solution to make the facial elements appear in a more logical order, as their alphabetical order currently happens to match up
-		DialogFacialExpressions = DialogFacialExpressions.sort(function (a, b) {
-			return a.Appearance.Asset.Group.Name < b.Appearance.Asset.Group.Name ? -1 : a.Appearance.Asset.Group.Name > b.Appearance.Asset.Group.Name ? 1 : 0;
-		});
-	}
-	w.DialogFacialExpressions = [];
-
-	w.DialogDrawExpressionMenu = function () {
-		// Draw the expression groups
-		DrawText(DialogFind(Player, "FacialExpression"), 165, 25, "White", "Black");
-		DrawButton(255, 50, 90, 90, "", "White", "Icons/WinkL.png", DialogFind(Player, "WinkLFacialExpressions"));
-		DrawButton(155, 50, 90, 90, "", "White", "Icons/WinkR.png", DialogFind(Player, "WinkRFacialExpressions"));
-		DrawButton(20, 50, 90, 90, "", "White", "Icons/Reset.png", DialogFind(Player, "ClearFacialExpressions"));
-		if (!DialogFacialExpressions || !DialogFacialExpressions.length) DialogFacialExpressionsBuild();
-		for (let I = 0; I < DialogFacialExpressions.length; I++) {
-			const FE = DialogFacialExpressions[I];
-			const OffsetY = 185 + 100 * I;
-
-			DrawButton(20, OffsetY, 90, 90, "", I == DialogFacialExpressionsSelected ? "Cyan" : "White", "Assets/Female3DCG/" + FE.Group + (FE.CurrentExpression ? "/" + FE.CurrentExpression : "") + "/Icon.png");
-
-			// Draw the table with expressions
-			if (I == DialogFacialExpressionsSelected) {
-				for (let j = 0; j < FE.ExpressionList.length; j++) {
-					const EOffsetX = 155 + 100 * (j % 3);
-					const EOffsetY = 185 + 100 * Math.floor(j / 3);
-					DrawButton(EOffsetX, EOffsetY, 90, 90, "", (FE.ExpressionList[j] == FE.CurrentExpression ? "Pink" : "White"), "Assets/Female3DCG/" + FE.Group + (FE.ExpressionList[j] ? "/" + FE.ExpressionList[j] : "") + "/Icon.png");
-				}
-			}
-		}
-	}
-
-	w.DialogClickExpressionMenu = function () {
-		if (MouseIn(20, 50, 90, 90)) {
-			DialogFacialExpressions.forEach(FE => {
-				CharacterSetFacialExpression(Player, FE.Group);
-				FE.CurrentExpression = null;
-			});
-		} else if (MouseIn(155, 50, 90, 90)) {
-			const EyesExpression = WardrobeGetExpression(Player);
-			const CurrentExpression = DialogFacialExpressions.find(FE => FE.Group == "Eyes").CurrentExpression;
-			CharacterSetFacialExpression(Player, "Eyes1", (EyesExpression.Eyes !== "Closed") ? "Closed" : (CurrentExpression !== "Closed" ? CurrentExpression : null));
-		} else if (MouseIn(255, 50, 90, 90)) {
-			const EyesExpression = WardrobeGetExpression(Player);
-			const CurrentExpression = DialogFacialExpressions.find(FE => FE.Group == "Eyes").CurrentExpression;
-			CharacterSetFacialExpression(Player, "Eyes2", (EyesExpression.Eyes2 !== "Closed") ? "Closed" : (CurrentExpression !== "Closed" ? CurrentExpression : null));
-		} else {
-			// Expression category buttons
-			for (let I = 0; I < DialogFacialExpressions.length; I++) {
-				if (MouseIn(20, 185 + 100 * I, 90, 90)) {
-					DialogFacialExpressionsSelected = I;
-				}
-			}
-
-			// Expression table
-			if (DialogFacialExpressionsSelected >= 0 && DialogFacialExpressionsSelected < DialogFacialExpressions.length) {
-				const FE = DialogFacialExpressions[DialogFacialExpressionsSelected];
-				for (let j = 0; j < FE.ExpressionList.length; j++) {
-					const EOffsetX = 155 + 100 * (j % 3);
-					const EOffsetY = 185 + 100 * Math.floor(j / 3);
-					if (MouseIn(EOffsetX, EOffsetY, 90, 90)) {
-						CharacterSetFacialExpression(Player, FE.Group, FE.ExpressionList[j]);
-						FE.CurrentExpression = FE.ExpressionList[j];
-					}
-				}
-			}
-		}
-	}
-
-	w.DialogSelfMenuOptions[0] =
-	{
-		Name: "Expression",
-		IsAvailable: () => true,
-		Draw: w.DialogDrawExpressionMenu,
-		Click: w.DialogClickExpressionMenu,
-	};
-
 	// Multiplayer interactive
 	class ChatRoomStatusManager {
 
@@ -690,8 +596,21 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 	});
 
 	function j_Announce(request = false) {
-		j_SendHiddenMessage("Hello", {version, request});
+		j_SendHiddenMessage("Hello", { version, request });
 	}
+
+	hiddenMessageHandlers.set("AntigarbleBlock", (src, data) => {
+		if (w.Player.Ownership?.MemberNumber === src) {
+			if (data) {
+				antigarble = 0;
+				antigarble_block = true;
+				ChatRoomSendLocal(`Antigarble has been blocked by your owner`);
+			} else {
+				antigarble_block = false;
+				ChatRoomSendLocal(`Antigarble has been unblocked by your owner`);
+			}
+		}
+	});
 
 	function ChatRoomDrawFriendList(C, Space, Zoom, CharX, CharY) {
 		const Char = ChatRoomCharacter[C];
