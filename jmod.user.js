@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Jmod - Bondage Club
 // @namespace    jmod
-// @version      1.0.3.0
+// @version      1.0.3.1
 // @description  Jomshir's collection of changes and patches for Bondage Club
 // @author       jomshir98
 // @match        https://www.bondageprojects.elementfx.com/*/BondageClub/*
@@ -31,7 +31,7 @@ window.setTimeout(
 
 		const clipboardAvailable = Boolean(navigator.clipboard);
 
-		const version = "1.0.3.0";
+		const version = "1.0.3.1";
 
 		/**
 		 * Utility function to add CSS in multiple passes.
@@ -540,7 +540,7 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 			let Content = `<div>`;
 			Content += data === null ? "Send Beep" : "Received beep";
 			Content += `<label> ${MemberName} [${MemberNumber}] </label>`;
-			Content += `<textarea id="FriendListBeepTextArea" readonly>${data?.Message || ""}</textarea>`;
+			Content += `<textarea id="FriendListBeepTextArea" readonly>${ChatRoomHTMLEntities(data?.Message || "")}</textarea>`;
 			Content += `<div><a onclick="BeepMenuClose()"> Close </a>`;
 			if (data === null) {
 				Content += `<a onclick="BeepMenuSend()"> Send </a>`;
