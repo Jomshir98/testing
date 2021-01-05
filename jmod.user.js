@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Jmod - Bondage Club
 // @namespace    jmod
-// @version      1.0.2.4
+// @version      1.0.3.0
 // @description  Jomshir's collection of changes and patches for Bondage Club
 // @author       jomshir98
 // @match        https://www.bondageprojects.elementfx.com/*/BondageClub/*
@@ -31,7 +31,7 @@ window.setTimeout(
 
 		const clipboardAvailable = Boolean(navigator.clipboard);
 
-		const version = "1.0.2.4";
+		const version = "1.0.3.0";
 
 		/**
 		 * Utility function to add CSS in multiple passes.
@@ -265,7 +265,30 @@ window.setTimeout(
 			}
 		};
 
+		function j_SendHiddenBeep(type, message, target) {
+			ServerSend("AccountBeep", { MemberNumber: target, BeepType: `Jmod:${type}:${JSON.stringify(message)}` });
 		}
+
+		const hiddenBeepHandlers = new Map();
+
+		const o_ServerAccountBeep = w.ServerAccountBeep;
+		w.ServerAccountBeep = data => {
+			if (typeof data?.BeepType === "string" && data.BeepType.startsWith("Jmod:")) {
+				const i = data.BeepType.indexOf(":", 5);
+				const type = data.BeepType.substring(5, i);
+				const msg = JSON.parse(data.BeepType.substr(i + 1));
+				const handler = hiddenBeepHandlers.get(type);
+				if (handler === undefined) {
+					console.warn("JMod - Hidden beep no handler", type, msg);
+				} else {
+					handler(data.MemberNumber, msg, data);
+				}
+			} else {
+				o_ServerAccountBeep(data);
+			}
+		};
+
+		let j_UnreadMessages = false;
 
 		// Controlable patches
 
@@ -497,6 +520,187 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 		w.ChatRoomCanLeave = () => j_Allow || o_ChatRoomCanLeave();
 
 		// Testing stuff
+
+		let BeepTarget = null;
+
+		const FriendListRun_o = w.FriendListRun;
+		w.FriendListRun = () => {
+			FriendListRun_o();
+			if (BeepTarget !== null) {
+				ElementPositionFix("FriendListBeep", 36, 5, 75, 1985, 890);
+			}
+		};
+
+		function MakeBeepMenu(MemberNumber, MemberName, data = null) {
+			if (BeepTarget == null) {
+				ElementCreateDiv("FriendListBeep");
+				ElementPositionFix("FriendListBeep", 36, 5, 75, 1985, 890);
+			}
+			BeepTarget = MemberNumber;
+			let Content = `<div>`;
+			Content += data === null ? "Send Beep" : "Received beep";
+			Content += `<label> ${MemberName} [${MemberNumber}] </label>`;
+			Content += `<textarea id="FriendListBeepTextArea" readonly>${data?.Message || ""}</textarea>`;
+			Content += `<div><a onclick="BeepMenuClose()"> Close </a>`;
+			if (data === null) {
+				Content += `<a onclick="BeepMenuSend()"> Send </a>`;
+			}
+			Content += `</div></div>`;
+			ElementContent("FriendListBeep", Content);
+			if (data === null) {
+				j_SendHiddenBeep("hello", true, MemberNumber);
+			}
+		}
+
+		w.BeepMenuClose = () => {
+			ElementRemove("FriendListBeep");
+			BeepTarget = null;
+		};
+
+		w.BeepMenuSend = () => {
+			if (BeepTarget !== null) {
+				const textarea = document.getElementById("FriendListBeepTextArea");
+				if (textarea) {
+					const msg = textarea.value;
+					if (msg) {
+						j_SendHiddenBeep("beepmsg", msg, BeepTarget);
+					} else {
+						ServerSend("AccountBeep", { MemberNumber: BeepTarget, BeepType: "" });
+					}
+				}
+				w.BeepMenuClose();
+			}
+		};
+
+		hiddenBeepHandlers.set("beepmsg", (from, msg, data) => {
+			j_UnreadMessages = true;
+			ServerBeep.MemberNumber = data.MemberNumber;
+			ServerBeep.MemberName = data.MemberName;
+			ServerBeep.ChatRoomName = data.ChatRoomName;
+			ServerBeep.Timer = CurrentTime + 10000;
+			if (Player.AudioSettings && Player.AudioSettings.PlayBeeps) {
+				ServerBeepAudio.volume = Player.AudioSettings.Volume;
+				ServerBeepAudio.play();
+			}
+			ServerBeep.Message = `${DialogFind(Player, "BeepFrom")} ${ServerBeep.MemberName} (${ServerBeep.MemberNumber}); With message`;
+			if (ServerBeep.ChatRoomName != null) ServerBeep.Message = ServerBeep.Message + " " + DialogFind(Player, "InRoom") + ' "' + ServerBeep.ChatRoomName + '" ' + (data.ChatRoomSpace === "Asylum" ? DialogFind(Player, "InAsylum") : "");
+			FriendListBeepLog.push({
+				MemberNumber: data.MemberNumber,
+				MemberName: data.MemberName,
+				ChatRoomName: data.ChatRoomName,
+				ChatRoomSpace: data.ChatRoomSpace,
+				Sent: false,
+				Time: new Date(),
+				Message: msg
+			});
+			if (CurrentScreen == "FriendList") ServerSend("AccountQuery", { Query: "OnlineFriends" });
+		});
+
+		w.FriendListBeep = MakeBeepMenu;
+
+		const o_FriendListExit = w.FriendListExit;
+		w.FriendListExit = () => {
+			w.BeepMenuClose();
+			o_FriendListExit();
+		};
+
+		const o_ChatRoomClearAllElements = w.ChatRoomClearAllElements;
+		w.ChatRoomClearAllElements = () => {
+			w.BeepMenuClose();
+			o_ChatRoomClearAllElements();
+		};
+
+		hiddenBeepHandlers.set("hello", (from, message) => {
+			if (message) {
+				j_SendHiddenBeep("hello", false, from);
+			} else if (BeepTarget === from) {
+				const elem = document.getElementById("FriendListBeepTextArea");
+				if (elem) {
+					elem.readOnly = false;
+				}
+			}
+		});
+
+		const o_FriendListLoadFriendList = w.FriendListLoadFriendList;
+		w.FriendListLoadFriendList = data => {
+			o_FriendListLoadFriendList(data);
+			if (FriendListMode[FriendListModeIndex] === "Beeps") {
+				j_UnreadMessages = false;
+				const PrivateRoomCaption = DialogFind(Player, "PrivateRoom");
+				const SentCaption = DialogFind(Player, "SentBeep");
+				const ReceivedCaption = DialogFind(Player, "ReceivedBeep");
+				const SpaceAsylumCaption = DialogFind(Player, "ChatRoomSpaceAsylum");
+				let Content = "";
+				for (let i = FriendListBeepLog.length - 1; i >= 0; i--) {
+					const B = FriendListBeepLog[i];
+					Content += "<div class='FriendListRow'>";
+					Content += "<div class='FriendListTextColumn FriendListFirstColumn'>" + B.MemberName + "</div>";
+					Content += "<div class='FriendListTextColumn'>" + (B.MemberNumber != null ? B.MemberNumber.toString() : "-") + "</div>";
+					Content +=
+						"<div class='FriendListTextColumn'>" +
+						(B.ChatRoomName == null ? "-" : (B.ChatRoomSpace ? B.ChatRoomSpace.replace("Asylum", SpaceAsylumCaption) + " - " : "") + B.ChatRoomName.replace("-Private-", PrivateRoomCaption)) +
+						"</div>";
+					if (B.Message) {
+						Content += `<div class='FriendListLinkColumn' onclick="ShowBeep(${i})">${B.Sent ? SentCaption : ReceivedCaption} ${TimerHourToString(B.Time)} (Message)</div>`;
+					} else {
+						Content += "<div class='FriendListTextColumn'>" + (B.Sent ? SentCaption : ReceivedCaption) + " " + TimerHourToString(B.Time) + "</div>";
+					}
+					Content += "</div>";
+				}
+				ElementContent("FriendList", Content);
+			}
+		};
+
+		w.ShowBeep = i => {
+			const beep = FriendListBeepLog[i];
+			if (beep) {
+				MakeBeepMenu(beep.MemberNumber, beep.MemberName, beep);
+			}
+		};
+
+		addStyle(`
+#FriendListBeep {
+	background: #000000AA;
+	display: flex !important;
+	justify-content: center;
+	align-items: center;
+	border: 2px solid white;
+	padding: 0 !important;
+	padding-bottom: 1% !important;
+}
+#FriendListBeep > div {
+	background: #999;
+	border: white solid 2px;
+	padding: .5em;
+	display: flex;
+	flex-direction: column;
+	width: 80%;
+	height: 80%;
+	align-items: center;
+}
+#FriendListBeep > div > * {
+	margin-top: .5em;
+}
+#FriendListBeep > div > div {
+	width: 100%;
+	display: flex;
+}
+#FriendListBeep textarea {
+	width: 100%;
+	height: 100%;
+}
+#FriendListBeep a {
+	width: 50%;
+	margin: auto;
+	text-align: center;
+	text-decoration: underline;
+	user-select: none;
+	cursor: pointer;
+}
+#FriendListBeep a:hover {
+	color: cyan !important;
+}
+`);
 
 		// Multiplayer interactive
 		class ChatRoomStatusManager {
@@ -802,6 +1006,9 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 								DrawImageResize(icon_Emote, CharX + 375 * Zoom, CharY + 50 * Zoom, 50 * Zoom, 50 * Zoom);
 								break;
 						}
+
+						if (ChatRoomCharacter[C].ID === 0 && j_UnreadMessages) {
+							DrawImageResize(icon_Letter, CharX + 325 * Zoom, CharY, 50 * Zoom, 50 * Zoom);
 						}
 					}
 				}
