@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Jmod - Bondage Club
 // @namespace    jmod
-// @version      1.0.3.3
+// @version      1.0.3.4
 // @description  Jomshir's collection of changes and patches for Bondage Club
 // @author       jomshir98
 // @match        https://www.bondageprojects.elementfx.com/*/BondageClub/*
@@ -31,7 +31,7 @@ window.setTimeout(
 
 		const clipboardAvailable = Boolean(navigator.clipboard);
 
-		const version = "1.0.3.3";
+		const version = "1.0.3.4";
 
 		/**
 		 * Utility function to add CSS in multiple passes.
@@ -351,6 +351,8 @@ LoginMistressItems - Mistress-only items are always available
 LoginStableItems - Stable exam items are always available
 InputChatMaxLength - Message limit increased to 1000 from 250
 WardrobeIO - Import and export buttons in wardrobe for current clothes
+[backport] LoginSubmitted - Properly handle disconnect during login 
+[experimental] Message beeps - send messages along beeps to other mod users
 [WIP] Typing indicator
 `);
 			} else {
@@ -511,6 +513,14 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 			ChatroomSM.SetInputElement(null);
 		};
 
+		const o_ServerSetConnected = w.ServerSetConnected;
+		w.ServerSetConnected = (connected, errorMessage) => {
+			o_ServerSetConnected(connected, errorMessage);
+			if (!connected) {
+				LoginSubmitted = false;
+			}
+		};
+
 		// Cheats
 
 		const o_Player_CanChange = w.Player.CanChange;
@@ -537,29 +547,42 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 				ElementCreateDiv("FriendListBeep");
 				ElementPositionFix("FriendListBeep", 36, 5, 75, 1985, 890);
 			}
+			const FriendListBeep = document.getElementById("FriendListBeep");
 			BeepTarget = MemberNumber;
-			BeepTargetName = MemberName
-			let Content = `<div>`;
-			Content += data === null ? "Send Beep" : data.Sent ? "Sent Beep" : "Received Beep";
-			Content += `<label> ${MemberName} [${MemberNumber}] </label>`;
-			Content += `<textarea id="FriendListBeepTextArea" maxlength="1000" readonly>${ChatRoomHTMLEntities(data?.Message || "")}</textarea>`;
-			Content += `<div><a onclick="BeepMenuClose()"> Close </a>`;
+			BeepTargetName = MemberName;
+			FriendListBeep.innerHTML = "";
+			const dialog = document.createElement("div");
+			const user = document.createElement("div");
+			user.innerText = `${MemberName} [${MemberNumber}]`;
+			const messageArea = document.createElement("textarea");
+			messageArea.id = "FriendListBeepTextArea";
+			messageArea.maxLength = 1000;
+			messageArea.readOnly = true;
+			messageArea.value = data?.Message || "";
+			const footer = document.createElement("div");
+			const closeBtn = document.createElement("a");
+			closeBtn.innerText = "Close";
+			closeBtn.onclick = BeepMenuClose;
+			footer.append(closeBtn);
 			if (data === null) {
-				Content += `<a onclick="BeepMenuSend()"> Send </a>`;
+				const sendBtn = document.createElement("a");
+				sendBtn.innerText = "Send";
+				sendBtn.onclick = BeepMenuSend;
+				footer.append(sendBtn);
 			}
-			Content += `</div></div>`;
-			ElementContent("FriendListBeep", Content);
+			dialog.append(data === null ? "Send Beep" : data.Sent ? "Sent Beep" : "Received Beep", messageArea, footer);
+			FriendListBeep.append(dialog);
 			if (data === null) {
 				j_SendHiddenBeep("hello", true, MemberNumber);
 			}
 		}
 
-		w.BeepMenuClose = () => {
+		function BeepMenuClose() {
 			ElementRemove("FriendListBeep");
 			BeepTarget = null;
-		};
+		}
 
-		w.BeepMenuSend = () => {
+		function BeepMenuSend() {
 			if (BeepTarget !== null) {
 				const textarea = document.getElementById("FriendListBeepTextArea");
 				if (textarea) {
@@ -578,9 +601,9 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 						Message: msg
 					});
 				}
-				w.BeepMenuClose();
+				BeepMenuClose();
 			}
-		};
+		}
 
 		hiddenBeepHandlers.set("beepmsg", (from, msg, data) => {
 			j_UnreadMessages = true;
@@ -610,14 +633,14 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 
 		const o_FriendListExit = w.FriendListExit;
 		w.FriendListExit = () => {
-			w.BeepMenuClose();
+			BeepMenuClose();
 			o_FriendListExit();
 			FriendListModeIndex = 0;
 		};
 
 		const o_ChatRoomClearAllElements = w.ChatRoomClearAllElements;
 		w.ChatRoomClearAllElements = () => {
-			w.BeepMenuClose();
+			BeepMenuClose();
 			o_ChatRoomClearAllElements();
 			FriendListModeIndex = 0;
 		};
@@ -700,6 +723,7 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 #FriendListBeep textarea {
 	width: 100%;
 	height: 100%;
+	font: inherit;
 }
 #FriendListBeep a {
 	width: 50%;
