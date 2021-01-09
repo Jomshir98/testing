@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Jmod - Bondage Club
 // @namespace    jmod
-// @version      1.0.3.5
+// @version      1.0.3.6
 // @description  Jomshir's collection of changes and patches for Bondage Club
 // @author       jomshir98
 // @match        https://www.bondageprojects.elementfx.com/*/BondageClub/*
@@ -31,7 +31,7 @@ window.setTimeout(
 
 		const clipboardAvailable = Boolean(navigator.clipboard);
 
-		const version = "1.0.3.5";
+		const version = "1.0.3.6";
 
 		/**
 		 * Utility function to add CSS in multiple passes.
@@ -234,6 +234,10 @@ window.setTimeout(
 		w.j_CopyCharacterClothesAndBinds = j_CopyCharacterClothesAndBinds;
 
 		function j_SendHiddenMessage(type, message, Target = null) {
+			if (HasBondageClubTools && !Array.isArray(ChatRoomData.Character)) {
+				console.warn(`JMod: Unsent message ${type}; BondageClubTools crash prevention`);
+				return;
+			}
 			ServerSend("ChatRoomChat", {
 				Content: "JModMsg",
 				Type: "Hidden",
