@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Jmod - Bondage Club
 // @namespace    jmod
-// @version      1.0.3.6
+// @version      1.0.3.7
 // @description  Jomshir's collection of changes and patches for Bondage Club
 // @author       jomshir98
 // @match        https://www.bondageprojects.elementfx.com/*/BondageClub/*
@@ -31,7 +31,7 @@ window.setTimeout(
 
 		const clipboardAvailable = Boolean(navigator.clipboard);
 
-		const version = "1.0.3.6";
+		const version = "1.0.3.7";
 
 		/**
 		 * Utility function to add CSS in multiple passes.
@@ -572,7 +572,7 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 				sendBtn.onclick = BeepMenuSend;
 				footer.append(sendBtn);
 			}
-			dialog.append(data === null ? "Send Beep" : data.Sent ? "Sent Beep" : "Received Beep", messageArea, footer);
+			dialog.append(data === null ? "Send Beep" : data.Sent ? "Sent Beep" : "Received Beep", user, messageArea, footer);
 			FriendListBeep.append(dialog);
 			if (data === null) {
 				j_SendHiddenBeep("hello", true, MemberNumber);
@@ -721,6 +721,7 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 #FriendListBeep > div > div {
 	width: 100%;
 	display: flex;
+	justify-content: center;
 }
 #FriendListBeep textarea {
 	width: 100%;
