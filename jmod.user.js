@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Jmod - Bondage Club
 // @namespace    jmod
-// @version      1.0.3.4
+// @version      1.0.3.5
 // @description  Jomshir's collection of changes and patches for Bondage Club
 // @author       jomshir98
 // @match        https://www.bondageprojects.elementfx.com/*/BondageClub/*
@@ -31,7 +31,7 @@ window.setTimeout(
 
 		const clipboardAvailable = Boolean(navigator.clipboard);
 
-		const version = "1.0.3.4";
+		const version = "1.0.3.5";
 
 		/**
 		 * Utility function to add CSS in multiple passes.
@@ -301,8 +301,6 @@ window.setTimeout(
 			if (CD !== res && typeof res === "string" && antigarble === 1) res += " <> " + CD;
 			return res;
 		};
-
-		const IsSMod = typeof w.ChatControlHead === "function";
 
 		// Chat control
 
@@ -826,11 +824,6 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 			ChatroomSM.SetInputElement(document.getElementById("InputChat"));
 		}
 
-		if (IsSMod) {
-			console.warn("SMod load!");
-			w.ChatRoomSM = ChatroomSM;
-		}
-
 		hiddenMessageHandlers.set("ChatRoomStatusEvent", (src, data) => {
 			for (const char of ChatRoomCharacter) {
 				if (char.MemberNumber === src) {
@@ -1051,8 +1044,38 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 			}
 		};
 
+		// Other mod compatability
+
+		const IsSMod = typeof w.ChatControlHead === "function";
+		const HasBondageClubTools = ServerSocket.listeners("ChatRoomMessage").some(i => i.toString().includes("window.postMessage"));
+
+		if (IsSMod) {
+			console.warn("JMod: SMod load!");
+			w.ChatRoomSM = ChatroomSM;
+		}
+		if (HasBondageClubTools) {
+			console.warn("JMod: Bondage Club Tools detected!");
+			const ChatRoomMessageForwarder = ServerSocket.listeners("ChatRoomMessage").find(i => i.toString().includes("window.postMessage"));
+			const AccountBeepForwarder = ServerSocket.listeners("AccountBeep").find(i => i.toString().includes("window.postMessage"));
+			console.assert(ChatRoomMessageForwarder !== undefined && AccountBeepForwarder !== undefined);
+			ServerSocket.off("ChatRoomMessage");
+			ServerSocket.on("ChatRoomMessage", data => {
+				if (data?.Type !== "Hidden" || data.Content !== "JModMsg" || typeof data.Sender !== "number") {
+					ChatRoomMessageForwarder(data);
+				}
+				return w.ChatRoomMessage(data);
+			});
+			ServerSocket.off("AccountBeep");
+			ServerSocket.on("AccountBeep", data => {
+				if (typeof data?.BeepType !== "string" || !data.BeepType.startsWith("Jmod:")) {
+					AccountBeepForwarder(data);
+				}
+				return w.ServerAccountBeep(data);
+			});
+		}
+
 		j_Announce(true);
-		InfoBeep("Jmod loaded!");
+		InfoBeep(`Jmod loaded! Version: ${version}`);
 	},
 	window.unsafeWindow !== undefined ? 1500 : 0
 );
