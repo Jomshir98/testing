@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Jmod - Bondage Club
 // @namespace    jmod
-// @version      1.0.3.9
+// @version      1.0.4.0
 // @description  Jomshir's collection of changes and patches for Bondage Club
 // @author       jomshir98
 // @match        https://www.bondageprojects.elementfx.com/*/BondageClub/*
@@ -31,7 +31,7 @@ window.setTimeout(
 
 		const clipboardAvailable = Boolean(navigator.clipboard);
 
-		const version = "1.0.3.9";
+		const version = "1.0.4.0";
 
 		/**
 		 * Utility function to add CSS in multiple passes.
@@ -354,6 +354,7 @@ LoginStableItems - Stable exam items are always available
 InputChatMaxLength - Message limit increased to 1000 from 250
 WardrobeIO - Import and export buttons in wardrobe for current clothes
 [experimental] Message beeps - send messages along beeps to other mod users
+[testing] GetPlayerDialog - Stricter mechanism to get Player type dialogs
 [WIP] Typing indicator
 `);
 			} else {
@@ -523,6 +524,22 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 		w.ChatRoomCanLeave = () => j_Allow || o_ChatRoomCanLeave();
 
 		// Testing stuff
+
+		/**
+		 * Searches in the dialog for a specific stage keyword and returns that dialog option if we find it, error therwise
+		 * @param {string} KeyWord  - The key word to search for
+		 * @returns {string}
+		 */
+		function GetPlayerDialog(KeyWord) {
+			for (let D of w.Player.Dialog) if (D.Stage == KeyWord) return D.Result.trim();
+			return "MISSING PLAYER DIALOG: " + KeyWord;
+		}
+
+		const o_DialogFind = w.DialogFind;
+		w.DialogFind = (C, KeyWord1, KeyWord2, ReturnPrevious) => {
+			if (C === w.Player && arguments.length === 2) return GetPlayerDialog(KeyWord1);
+			return o_DialogFind(C, KeyWord1, KeyWord2, ReturnPrevious);
+		};
 
 		let BeepTarget = null;
 		let BeepTargetName = "";
