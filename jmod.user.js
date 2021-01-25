@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Jmod - Bondage Club
 // @namespace    jmod
-// @version      1.0.3.8
+// @version      1.0.3.9
 // @description  Jomshir's collection of changes and patches for Bondage Club
 // @author       jomshir98
 // @match        https://www.bondageprojects.elementfx.com/*/BondageClub/*
@@ -31,7 +31,7 @@ window.setTimeout(
 
 		const clipboardAvailable = Boolean(navigator.clipboard);
 
-		const version = "1.0.3.8";
+		const version = "1.0.3.9";
 
 		/**
 		 * Utility function to add CSS in multiple passes.
@@ -353,7 +353,6 @@ LoginMistressItems - Mistress-only items are always available
 LoginStableItems - Stable exam items are always available
 InputChatMaxLength - Message limit increased to 1000 from 250
 WardrobeIO - Import and export buttons in wardrobe for current clothes
-[backport] LoginSubmitted - Properly handle disconnect during login 
 [experimental] Message beeps - send messages along beeps to other mod users
 [WIP] Typing indicator
 `);
@@ -513,14 +512,6 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 		w.ChatRoomLeave = () => {
 			o_ChatRoomLeave();
 			ChatroomSM.SetInputElement(null);
-		};
-
-		const o_ServerSetConnected = w.ServerSetConnected;
-		w.ServerSetConnected = (connected, errorMessage) => {
-			o_ServerSetConnected(connected, errorMessage);
-			if (!connected) {
-				LoginSubmitted = false;
-			}
 		};
 
 		// Cheats
@@ -908,25 +899,19 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 
 			// The darkness factors varies with blindness level (1 is bright, 0 is pitch black)
 			let DarkFactor = 1.0;
-			let RenderSingle = false;
+			const RenderSingle = Player.GameplaySettings && Player.GameplaySettings.SensDepChatLog == "SensDepExtreme" && Player.GameplaySettings.BlindDisableExamine && Player.GetBlindLevel() >= 3;
+			const CharacterCount = RenderSingle ? 1 : ChatRoomCharacter.length;
 
 			// Determine the horizontal & vertical position and zoom levels to fit all characters evenly in the room
-			const Space = ChatRoomCharacter.length >= 2 ? 1000 / Math.min(ChatRoomCharacter.length, 5) : 500;
-			const Zoom = ChatRoomCharacter.length >= 3 ? Space / 400 : 1;
-			const X = ChatRoomCharacter.length >= 3 ? (Space - 500 * Zoom) / 2 : 0;
-			const Y = ChatRoomCharacter.length <= 5 ? (1000 * (1 - Zoom)) / 2 : 0;
-
-			if (Player.GameplaySettings && Player.GameplaySettings.SensDepChatLog == "SensDepExtreme" && Player.GameplaySettings.BlindDisableExamine && Player.GetBlindLevel() >= 3) {
-				RenderSingle = true;
-				Space = 500;
-				Zoom = 1;
-				X = 0;
-				Y = 0;
-			}
+			const Space = CharacterCount >= 2 && !RenderSingle ? 1000 / Math.min(CharacterCount, 5) : 500;
+			const Zoom = CharacterCount >= 3 && !RenderSingle ? Space / 400 : 1;
+			const X = CharacterCount >= 3 ? (Space - 500 * Zoom) / 2 : 0;
+			const Y = CharacterCount <= 5 ? (1000 * (1 - Zoom)) / 2 : 0;
+			const InvertRoom = Player.GraphicsSettings && Player.GraphicsSettings.InvertRoom && Player.IsInverted();
 
 			// If there's 2 characters, it's zoomed in
 			if (!DoClick && Player.GetBlindLevel() < 3) {
-				DrawImageZoomCanvas("Backgrounds/" + ChatRoomData.Background + ".jpg", MainCanvas, 500 * (2 - 1 / Zoom), 0, 1000 / Zoom, 1000, 0, Y, 1000, 1000 * Zoom);
+				DrawImageZoomCanvas("Backgrounds/" + ChatRoomData.Background + ".jpg", MainCanvas, 500 * (2 - 1 / Zoom), 0, 1000 / Zoom, 1000, 0, Y, 1000, 1000 * Zoom, InvertRoom);
 
 				// Draws a black overlay if the character is blind
 				if (Player.GetBlindLevel() == 2) DarkFactor = 0.15;
@@ -999,6 +984,7 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 							ChatRoomOwnershipOption = "";
 							ChatRoomLovershipOption = "";
 							if (ChatRoomCharacter[C].ID != 0) ServerSend("ChatRoomAllowItem", { MemberNumber: ChatRoomCharacter[C].MemberNumber });
+							if (ChatRoomCharacter[C].IsOwnedByPlayer() || ChatRoomCharacter[C].IsLoverOfPlayer()) ServerSend("ChatRoomChat", { Content: "RuleInfoGet", Type: "Hidden", Target: ChatRoomCharacter[C].MemberNumber });
 							CharacterSetCurrent(ChatRoomCharacter[C]);
 						} else {
 							if (
@@ -1013,14 +999,14 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 				} else {
 					// Draw the background a second time for characters 6 to 10 (we do it here to correct clipping errors from the first part)
 					if (C == 5 && Player.GetBlindLevel() < 3) {
-						DrawImageZoomCanvas("Backgrounds/" + ChatRoomData.Background + ".jpg", MainCanvas, 0, 0, 2000, 1000, 0, 500, 1000, 500);
+						DrawImageZoomCanvas("Backgrounds/" + ChatRoomData.Background + ".jpg", MainCanvas, 0, 0, 2000, 1000, 0, 500, 1000, 500, InvertRoom);
 						if (DarkFactor < 1.0) DrawRect(0, 500, 1000, 500, "rgba(0,0,0," + (1.0 - DarkFactor) + ")");
 					}
 					// Draw the character
 					DrawCharacter(ChatRoomCharacter[C], CharX, CharY, Zoom);
 					if (ChatRoomTargetMemberNumber == ChatRoomCharacter[C].MemberNumber) DrawImage("Icons/Small/Whisper.png", CharX + 75 * Zoom, CharY + 950 * Zoom);
 
-					// Draw the friendlist / blacklist / whitelist icons
+					// Draw the ghostlist/friendlist, whitelist/blacklist, admin icons
 					if (ChatRoomCharacter[C].MemberNumber != null) {
 						if (Player.WhiteList.includes(ChatRoomCharacter[C].MemberNumber)) DrawImageResize("Icons/Small/WhiteList.png", CharX + 75 * Zoom, CharY, 50 * Zoom, 50 * Zoom);
 						else if (Player.BlackList.includes(ChatRoomCharacter[C].MemberNumber)) DrawImageResize("Icons/Small/BlackList.png", CharX + 75 * Zoom, CharY, 50 * Zoom, 50 * Zoom);
