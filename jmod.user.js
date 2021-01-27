@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Jmod - Bondage Club
 // @namespace    jmod
-// @version      1.0.4.1
+// @version      1.0.4.2
 // @description  Jomshir's collection of changes and patches for Bondage Club
 // @author       jomshir98
 // @match        https://www.bondageprojects.elementfx.com/*/BondageClub/*
@@ -31,7 +31,7 @@ window.setTimeout(
 
 		const clipboardAvailable = Boolean(navigator.clipboard);
 
-		const version = "1.0.4.1";
+		const version = "1.0.4.2";
 
 		/**
 		 * Utility function to add CSS in multiple passes.
@@ -531,7 +531,7 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 		 * @returns {string}
 		 */
 		function GetPlayerDialog(KeyWord) {
-			for (let D of w.Player.Dialog) if (D.Stage == KeyWord) return D.Result.trim();
+			for (let D of IsSMod ? w.Player.Dialog.Dialog : w.Player.Dialog) if (D.Stage == KeyWord) return D.Result.trim();
 			return "MISSING PLAYER DIALOG: " + KeyWord;
 		}
 
