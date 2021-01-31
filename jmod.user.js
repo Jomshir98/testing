@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Jmod - Bondage Club
 // @namespace    jmod
-// @version      1.0.4.2
+// @version      1.0.4.3
 // @description  Jomshir's collection of changes and patches for Bondage Club
 // @author       jomshir98
 // @match        https://www.bondageprojects.elementfx.com/*/BondageClub/*
@@ -31,7 +31,7 @@ window.setTimeout(
 
 		const clipboardAvailable = Boolean(navigator.clipboard);
 
-		const version = "1.0.4.2";
+		const version = "1.0.4.3";
 
 		/**
 		 * Utility function to add CSS in multiple passes.
@@ -514,6 +514,11 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 			o_ChatRoomLeave();
 			ChatroomSM.SetInputElement(null);
 		};
+
+		w.ElementIsScrolledToEnd = (ID) => {
+			const element = document.getElementById(ID);
+			return element != null && element.scrollHeight - element.scrollTop - element.clientHeight <= 1;
+		}
 
 		// Cheats
 
