@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Jmod - Bondage Club
 // @namespace    jmod
-// @version      1.5.1
+// @version      1.5.2
 // @description  Jomshir's collection of changes and patches for Bondage Club
 // @author       jomshir98
 // @match        https://www.bondageprojects.elementfx.com/*/BondageClub/*
@@ -31,14 +31,11 @@ window.setTimeout(
 
 		const clipboardAvailable = Boolean(navigator.clipboard);
 
-		const version = "1.5.1";
-		const isR65 = typeof w.ChatRoomDrawCharacterOverlay === "function";
+		const version = "1.5.2";
 
 		// Loading into already loaded club - clear some caches
-		if (isR65) {
-			DrawRunMap.clear();
-			DrawScreen = null;
-		}
+		DrawRunMap.clear();
+		DrawScreen = null;
 
 		/**
 		 * Utility function to add CSS in multiple passes.
@@ -358,11 +355,9 @@ AsylumEntranceCanWander - Always can move in asylum
 CheatAllow - Enable built-in cheats
 LoginMistressItems - Mistress-only items are always available
 LoginStableItems - Stable exam items are always available
-InputChatMaxLength - Message limit increased to 1000 from 250
 WardrobeIO - Import and export buttons in wardrobe for current clothes
-[experimental] Message beeps - send messages along beeps to other mod users
-[testing] GetPlayerDialog - Stricter mechanism to get Player type dialogs
-[WIP] Typing indicator
+[testing] Message beeps - send messages along beeps to other mod users
+[testing] Typing indicator
 `);
 			} else {
 				ChatRoomSendLocal(`Unknown command ${cmd} - use .help to show commands or two dots to send message starting with a dot`);
@@ -505,17 +500,12 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 			w.ServerPlayerInventorySync();
 		}
 
-		// R65 redundant!
 		const o_ChatRoomCreateElement = w.ChatRoomCreateElement;
 		w.ChatRoomCreateElement = () => {
 			o_ChatRoomCreateElement();
 			const elem = document.getElementById("InputChat");
-			elem.setAttribute("maxLength", 1000);
 			ChatroomSM.SetInputElement(elem);
 		};
-		if (document.getElementById("InputChat") != null) {
-			document.getElementById("InputChat").setAttribute("maxLength", 1000);
-		}
 
 		const o_ChatRoomLeave = w.ChatRoomLeave;
 		w.ChatRoomLeave = () => {
@@ -537,24 +527,6 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 		w.ChatRoomCanLeave = () => j_Allow || o_ChatRoomCanLeave();
 
 		// Testing stuff
-
-		/**
-		 * Searches in the dialog for a specific stage keyword and returns that dialog option if we find it, error therwise
-		 * @param {string} KeyWord  - The key word to search for
-		 * @returns {string}
-		 */
-		function GetPlayerDialog(KeyWord) {
-			for (let D of IsSMod ? w.Player.Dialog.Dialog : w.Player.Dialog) if (D.Stage == KeyWord) return D.Result.trim();
-			return "MISSING PLAYER DIALOG: " + KeyWord;
-		}
-
-		if (!isR65) {
-			const o_DialogFind = w.DialogFind;
-			w.DialogFind = (C, KeyWord1, KeyWord2, ReturnPrevious) => {
-				if (C === w.Player && KeyWord2 === undefined) return GetPlayerDialog(KeyWord1);
-				return o_DialogFind(C, KeyWord1, KeyWord2, ReturnPrevious);
-			};
-		}
 
 		let BeepTarget = null;
 		let BeepTargetName = "";
@@ -923,183 +895,38 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 			}
 		}
 
-		if (isR65) {
-			w.ChatRoomDrawCharacterOverlay = (C, CharX, CharY, Zoom) => {
-				// Draw the ghostlist/friendlist, whitelist/blacklist, admin icons
-				if (ChatRoomHideIconState == 0) {
-					if (Player.WhiteList.includes(C.MemberNumber)) {
-						DrawImageResize("Icons/Small/WhiteList.png", CharX + 75 * Zoom, CharY, 50 * Zoom, 50 * Zoom);
-					} else if (Player.BlackList.includes(C.MemberNumber)) {
-						DrawImageResize("Icons/Small/BlackList.png", CharX + 75 * Zoom, CharY, 50 * Zoom, 50 * Zoom);
-					}
-					if (Array.isArray(ChatRoomData.Admin) && ChatRoomData.Admin.includes(C.MemberNumber)) {
-						DrawImageResize("Icons/Small/Admin.png", CharX + 125 * Zoom, CharY, 50 * Zoom, 50 * Zoom);
-					}
-					if (Player.GhostList.includes(C.MemberNumber)) {
-						DrawImageResize("Icons/Small/GhostList.png", CharX + 375 * Zoom, CharY, 50 * Zoom, 50 * Zoom);
-					} else ChatRoomDrawFriendList(C, Zoom, CharX, CharY);
+		w.ChatRoomDrawCharacterOverlay = (C, CharX, CharY, Zoom) => {
+			// Draw the ghostlist/friendlist, whitelist/blacklist, admin icons
+			if (ChatRoomHideIconState == 0) {
+				if (Player.WhiteList.includes(C.MemberNumber)) {
+					DrawImageResize("Icons/Small/WhiteList.png", CharX + 75 * Zoom, CharY, 50 * Zoom, 50 * Zoom);
+				} else if (Player.BlackList.includes(C.MemberNumber)) {
+					DrawImageResize("Icons/Small/BlackList.png", CharX + 75 * Zoom, CharY, 50 * Zoom, 50 * Zoom);
 				}
-
-				switch (C.Status) {
-					case ChatroomSM.StatusTypes.Typing:
-						DrawImageResize(icon_Typing, CharX + 375 * Zoom, CharY + 50 * Zoom, 50 * Zoom, 50 * Zoom);
-						break;
-					case ChatroomSM.StatusTypes.Whisper:
-						DrawImageResize(icon_Typing, CharX + 375 * Zoom, CharY + 50 * Zoom, 50 * Zoom, 50 * Zoom, 0.5);
-						break;
-					case ChatroomSM.StatusTypes.Emote:
-						DrawImageResize(icon_Emote, CharX + 375 * Zoom, CharY + 50 * Zoom, 50 * Zoom, 50 * Zoom);
-						break;
+				if (Array.isArray(ChatRoomData.Admin) && ChatRoomData.Admin.includes(C.MemberNumber)) {
+					DrawImageResize("Icons/Small/Admin.png", CharX + 125 * Zoom, CharY, 50 * Zoom, 50 * Zoom);
 				}
+				if (Player.GhostList.includes(C.MemberNumber)) {
+					DrawImageResize("Icons/Small/GhostList.png", CharX + 375 * Zoom, CharY, 50 * Zoom, 50 * Zoom);
+				} else ChatRoomDrawFriendList(C, Zoom, CharX, CharY);
+			}
 
-				if (ChatRoomTargetMemberNumber == C.MemberNumber && ChatRoomHideIconState <= 1) {
-					DrawImage("Icons/Small/Whisper.png", CharX + 75 * Zoom, CharY + 950 * Zoom);
-				}
-			};
-		} else {
-			w.ChatRoomDrawCharacter = DoClick => {
-				ChatRoomCharacter = ChatRoomCharacter.filter(Boolean);
-				// Intercepts the online game chat room clicks if we need to
-				if (DoClick && OnlineGameClick()) return;
+			switch (C.Status) {
+				case ChatroomSM.StatusTypes.Typing:
+					DrawImageResize(icon_Typing, CharX + 375 * Zoom, CharY + 50 * Zoom, 50 * Zoom, 50 * Zoom);
+					break;
+				case ChatroomSM.StatusTypes.Whisper:
+					DrawImageResize(icon_Typing, CharX + 375 * Zoom, CharY + 50 * Zoom, 50 * Zoom, 50 * Zoom, 0.5);
+					break;
+				case ChatroomSM.StatusTypes.Emote:
+					DrawImageResize(icon_Emote, CharX + 375 * Zoom, CharY + 50 * Zoom, 50 * Zoom, 50 * Zoom);
+					break;
+			}
 
-				// The darkness factors varies with blindness level (1 is bright, 0 is pitch black)
-				let DarkFactor = 1.0;
-				const RenderSingle = Player.GameplaySettings && Player.GameplaySettings.SensDepChatLog == "SensDepExtreme" && Player.GameplaySettings.BlindDisableExamine && Player.GetBlindLevel() >= 3;
-				const CharacterCount = RenderSingle ? 1 : ChatRoomCharacter.length;
-
-				// Determine the horizontal & vertical position and zoom levels to fit all characters evenly in the room
-				const Space = CharacterCount >= 2 && !RenderSingle ? 1000 / Math.min(CharacterCount, 5) : 500;
-				const Zoom = CharacterCount >= 3 && !RenderSingle ? Space / 400 : 1;
-				const X = CharacterCount >= 3 ? (Space - 500 * Zoom) / 2 : 0;
-				const Y = CharacterCount <= 5 ? (1000 * (1 - Zoom)) / 2 : 0;
-				const InvertRoom = Player.GraphicsSettings && Player.GraphicsSettings.InvertRoom && Player.IsInverted();
-
-				// If there's 2 characters, it's zoomed in
-				if (!DoClick && Player.GetBlindLevel() < 3) {
-					DrawImageZoomCanvas("Backgrounds/" + ChatRoomData.Background + ".jpg", MainCanvas, 500 * (2 - 1 / Zoom), 0, 1000 / Zoom, 1000, 0, Y, 1000, 1000 * Zoom, InvertRoom);
-
-					// Draws a black overlay if the character is blind
-					if (Player.GetBlindLevel() == 2) DarkFactor = 0.15;
-					else if (Player.GetBlindLevel() == 1) DarkFactor = 0.3;
-					if (DarkFactor < 1.0) DrawRect(0, 0, 2000, 1000, "rgba(0,0,0," + (1.0 - DarkFactor) + ")");
-				}
-
-				// Draw the characters (in click mode, we can open the character menu or start whispering to them)
-				for (let C = 0; C < ChatRoomCharacter.length; C++) {
-					const CharX = RenderSingle ? 0 : X + (C % 5) * Space;
-					const CharY = RenderSingle ? 0 : Y + Math.floor(C / 5) * 500;
-					if (RenderSingle && ChatRoomCharacter[C].ID != 0) continue;
-					if (DoClick) {
-						if (MouseIn(CharX, CharY, 450 * Zoom, 1000 * Zoom)) {
-							if (MouseY <= CharY + 900 * Zoom && (Player.GameplaySettings && Player.GameplaySettings.BlindDisableExamine ? !(Player.GetBlindLevel() >= 3) || ChatRoomCharacter[C].ID == Player.ID : true)) {
-								// If the arousal meter is shown for that character, we can interact with it
-								if (ChatRoomCharacter[C].ID == 0 || Player.ArousalSettings.ShowOtherMeter == null || Player.ArousalSettings.ShowOtherMeter)
-									if (
-										ChatRoomCharacter[C].ID == 0 ||
-										(ChatRoomCharacter[C].ArousalSettings != null && ChatRoomCharacter[C].ArousalSettings.Visible != null && ChatRoomCharacter[C].ArousalSettings.Visible == "Access" && ChatRoomCharacter[C].AllowItem) ||
-										(ChatRoomCharacter[C].ArousalSettings != null && ChatRoomCharacter[C].ArousalSettings.Visible != null && ChatRoomCharacter[C].ArousalSettings.Visible == "All")
-									)
-										if (
-											ChatRoomCharacter[C].ArousalSettings != null &&
-											ChatRoomCharacter[C].ArousalSettings.Active != null &&
-											(ChatRoomCharacter[C].ArousalSettings.Active == "Manual" || ChatRoomCharacter[C].ArousalSettings.Active == "Hybrid" || ChatRoomCharacter[C].ArousalSettings.Active == "Automatic")
-										) {
-											// The arousal meter can be maximized or minimized by clicking on it
-											if (MouseIn(CharX + 60 * Zoom, CharY + 400 * Zoom, 80 * Zoom, 100 * Zoom) && !ChatRoomCharacter[C].ArousalZoom) {
-												ChatRoomCharacter[C].ArousalZoom = true;
-												return;
-											}
-											if (MouseIn(CharX + 50 * Zoom, CharY + 615 * Zoom, 100 * Zoom, 85 * Zoom) && ChatRoomCharacter[C].ArousalZoom) {
-												ChatRoomCharacter[C].ArousalZoom = false;
-												return;
-											}
-
-											// If the player can manually control her arousal, we set the progress manual and change the facial expression, it can trigger an orgasm at 100%
-											if (ChatRoomCharacter[C].ID == 0 && MouseIn(CharX + 50 * Zoom, CharY + 200 * Zoom, 100 * Zoom, 500 * Zoom) && ChatRoomCharacter[C].ArousalZoom) {
-												if (Player.ArousalSettings != null && Player.ArousalSettings.Active != null && Player.ArousalSettings.Progress != null) {
-													if (Player.ArousalSettings.Active == "Manual" || Player.ArousalSettings.Active == "Hybrid") {
-														let Arousal = Math.round((CharY + 625 * Zoom - MouseY) / (4 * Zoom), 0);
-														if (Arousal < 0) Arousal = 0;
-														if (Arousal > 100) Arousal = 100;
-														ActivitySetArousal(Player, Arousal);
-														if (Player.ArousalSettings.AffectExpression == null || Player.ArousalSettings.AffectExpression) ActivityExpression(Player, Player.ArousalSettings.Progress);
-														if (Player.ArousalSettings.Progress == 100) ActivityOrgasmPrepare(Player);
-													}
-													return;
-												}
-											}
-											// Don't do anything if the thermometer is clicked without access to it
-											if (MouseIn(CharX + 50 * Zoom, CharY + 200 * Zoom, 100 * Zoom, 415 * Zoom) && ChatRoomCharacter[C].ArousalZoom) return;
-										}
-
-								// If a character to swap was selected, we can complete the swap with the second character
-								if (ChatRoomHasSwapTarget() && ChatRoomSwapTarget != ChatRoomCharacter[C].MemberNumber) {
-									ChatRoomCompleteSwap(ChatRoomCharacter[C].MemberNumber);
-									break;
-								}
-
-								// Intercepts the online game character clicks if we need to
-								if (OnlineGameClickCharacter(ChatRoomCharacter[C])) return;
-
-								// Gives focus to the character
-								document.getElementById("InputChat").style.display = "none";
-								document.getElementById("TextAreaChatLog").style.display = "none";
-								ChatRoomBackground = ChatRoomData.Background;
-								ChatRoomCharacter[C].AllowItem = ChatRoomCharacter[C].ID == 0;
-								ChatRoomOwnershipOption = "";
-								ChatRoomLovershipOption = "";
-								if (ChatRoomCharacter[C].ID != 0) ServerSend("ChatRoomAllowItem", { MemberNumber: ChatRoomCharacter[C].MemberNumber });
-								if (ChatRoomCharacter[C].IsOwnedByPlayer() || ChatRoomCharacter[C].IsLoverOfPlayer()) ServerSend("ChatRoomChat", { Content: "RuleInfoGet", Type: "Hidden", Target: ChatRoomCharacter[C].MemberNumber });
-								CharacterSetCurrent(ChatRoomCharacter[C]);
-							} else {
-								if (
-									(!LogQuery("BlockWhisper", "OwnerRule") || Player.Ownership == null || Player.Ownership.Stage != 1 || Player.Ownership.MemberNumber == ChatRoomCharacter[C].MemberNumber || !ChatRoomOwnerInside()) &&
-									!(Player.GameplaySettings && Player.GameplaySettings.SensDepChatLog == "SensDepExtreme" && Player.GetBlindLevel() >= 3)
-								)
-									ChatRoomTargetMemberNumber = ChatRoomTargetMemberNumber == ChatRoomCharacter[C].MemberNumber || ChatRoomCharacter[C].ID == 0 ? null : ChatRoomCharacter[C].MemberNumber;
-								else if (Player.GameplaySettings && Player.GameplaySettings.SensDepChatLog == "SensDepExtreme" && Player.GetBlindLevel() >= 3) ChatRoomTargetMemberNumber = null;
-							}
-							break;
-						}
-					} else {
-						// Draw the background a second time for characters 6 to 10 (we do it here to correct clipping errors from the first part)
-						if (C == 5 && Player.GetBlindLevel() < 3) {
-							DrawImageZoomCanvas("Backgrounds/" + ChatRoomData.Background + ".jpg", MainCanvas, 0, 0, 2000, 1000, 0, 500, 1000, 500, InvertRoom);
-							if (DarkFactor < 1.0) DrawRect(0, 500, 1000, 500, "rgba(0,0,0," + (1.0 - DarkFactor) + ")");
-						}
-						// Draw the character
-						DrawCharacter(ChatRoomCharacter[C], CharX, CharY, Zoom);
-						if (ChatRoomTargetMemberNumber == ChatRoomCharacter[C].MemberNumber) DrawImage("Icons/Small/Whisper.png", CharX + 75 * Zoom, CharY + 950 * Zoom);
-
-						// Draw the ghostlist/friendlist, whitelist/blacklist, admin icons
-						if (ChatRoomCharacter[C].MemberNumber != null) {
-							if (Player.WhiteList.includes(ChatRoomCharacter[C].MemberNumber)) DrawImageResize("Icons/Small/WhiteList.png", CharX + 75 * Zoom, CharY, 50 * Zoom, 50 * Zoom);
-							else if (Player.BlackList.includes(ChatRoomCharacter[C].MemberNumber)) DrawImageResize("Icons/Small/BlackList.png", CharX + 75 * Zoom, CharY, 50 * Zoom, 50 * Zoom);
-							if (ChatRoomData.Admin && ChatRoomData.Admin.includes(ChatRoomCharacter[C].MemberNumber)) DrawImageResize("Icons/Small/Admin.png", CharX + 125 * Zoom, CharY, 50 * Zoom, 50 * Zoom);
-							// if (Player.FriendList.has(ChatRoomCharacter[C].MemberNumber)) DrawImage("Icons/Small/FriendList.png", (C % 5) * Space + X + 375 * Zoom, Y + Math.floor(C / 5) * 500);
-							if (Player.GhostList.includes(ChatRoomCharacter[C].MemberNumber)) DrawImageResize("Icons/Small/GhostList.png", CharX + 375 * Zoom, CharY, 50 * Zoom, 50 * Zoom);
-							else ChatRoomDrawFriendList(ChatRoomCharacter[C], Zoom, CharX, CharY);
-
-							switch (ChatRoomCharacter[C].Status) {
-								case ChatroomSM.StatusTypes.Typing:
-									DrawImageResize(icon_Typing, CharX + 375 * Zoom, CharY + 50 * Zoom, 50 * Zoom, 50 * Zoom);
-									break;
-								case ChatroomSM.StatusTypes.Whisper:
-									DrawImageResize(icon_Typing, CharX + 375 * Zoom, CharY + 50 * Zoom, 50 * Zoom, 50 * Zoom, 0.5);
-									break;
-								case ChatroomSM.StatusTypes.Emote:
-									DrawImageResize(icon_Emote, CharX + 375 * Zoom, CharY + 50 * Zoom, 50 * Zoom, 50 * Zoom);
-									break;
-							}
-
-							if (ChatRoomCharacter[C].ID === 0 && j_UnreadMessages) {
-								DrawImageResize(icon_Letter, CharX + 325 * Zoom, CharY, 50 * Zoom, 50 * Zoom);
-							}
-						}
-					}
-				}
-			};
-		}
+			if (ChatRoomTargetMemberNumber == C.MemberNumber && ChatRoomHideIconState <= 1) {
+				DrawImage("Icons/Small/Whisper.png", CharX + 75 * Zoom, CharY + 950 * Zoom);
+			}
+		};
 
 		// Other mod compatability
 
