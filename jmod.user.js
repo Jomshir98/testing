@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Jmod - Bondage Club
 // @namespace    jmod
-// @version      1.5.2
+// @version      1.5.3
 // @description  Jomshir's collection of changes and patches for Bondage Club
 // @author       jomshir98
 // @match        https://www.bondageprojects.elementfx.com/*/BondageClub/*
@@ -31,7 +31,7 @@ window.setTimeout(
 
 		const clipboardAvailable = Boolean(navigator.clipboard);
 
-		const version = "1.5.2";
+		const version = "1.5.3";
 
 		// Loading into already loaded club - clear some caches
 		DrawRunMap.clear();
@@ -417,22 +417,24 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 		let j_WardrobeIncludeBinds = false;
 		w.AppearanceRun = () => {
 			s_AppearanceRun();
-			if (w.CharacterAppearanceMode == "Wardrobe" && clipboardAvailable) {
-				DrawButton(1457, 125, 50, 50, "", "White", j_WardrobeIncludeBinds ? "Icons/Checked.png" : "", "Include restraints");
-				DrawButton(1534, 125, 207, 50, "Export", "White", "");
-				DrawButton(1768, 125, 207, 50, "Import", "White", "");
+			if ((w.CharacterAppearanceMode == "Wardrobe" || IsSMod && AppearanceMode == "Wardrobe") && clipboardAvailable) {
+				const Y = IsSMod ? 265 : 125;
+				DrawButton(1457, Y, 50, 50, "", "White", j_WardrobeIncludeBinds ? "Icons/Checked.png" : "", "Include restraints");
+				DrawButton(1534, Y, 207, 50, "Export", "White", "");
+				DrawButton(1768, Y, 207, 50, "Import", "White", "");
 			}
 		};
 
 		const s_AppearanceClick = w.AppearanceClick;
 		w.AppearanceClick = () => {
-			if (w.CharacterAppearanceMode == "Wardrobe" && clipboardAvailable) {
+			if ((w.CharacterAppearanceMode == "Wardrobe" || IsSMod && AppearanceMode == "Wardrobe") && clipboardAvailable) {
+				const Y = IsSMod ? 265 : 125;
 				// Restraints toggle
-				if (w.MouseIn(1457, 125, 50, 50)) {
+				if (w.MouseIn(1457, Y, 50, 50)) {
 					j_WardrobeIncludeBinds = !j_WardrobeIncludeBinds;
 				}
 				// Export
-				if (w.MouseIn(1534, 125, 207, 50)) {
+				if (w.MouseIn(1534, Y, 207, 50)) {
 					window.setTimeout(async () => {
 						await navigator.clipboard.writeText(j_WardrobeExportSelectionClothes(j_WardrobeIncludeBinds));
 						w.CharacterAppearanceWardrobeText = "Copied to clipboard!";
@@ -440,7 +442,7 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 					return;
 				}
 				// Import
-				if (w.MouseIn(1768, 125, 207, 50)) {
+				if (w.MouseIn(1768, Y, 207, 50)) {
 					window.setTimeout(async () => {
 						if (typeof navigator.clipboard.readText !== "function") {
 							w.CharacterAppearanceWardrobeText = "Please press Ctrl+V";
