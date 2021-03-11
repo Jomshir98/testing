@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Jmod - Bondage Club
 // @namespace    jmod
-// @version      1.5.3
+// @version      1.5.4
 // @description  Jomshir's collection of changes and patches for Bondage Club
 // @author       jomshir98
 // @match        https://www.bondageprojects.elementfx.com/*/BondageClub/*
@@ -31,7 +31,9 @@ window.setTimeout(
 
 		const clipboardAvailable = Boolean(navigator.clipboard);
 
-		const version = "1.5.3";
+		const version = "1.5.4";
+
+		const isR66 = !!(window.GameVersion?.startsWith("R66"));
 
 		// Loading into already loaded club - clear some caches
 		DrawRunMap.clear();
@@ -256,6 +258,8 @@ window.setTimeout(
 
 		w.ChatRoomMessage = data => {
 			if (data?.Type === "Hidden" && data.Content === "JModMsg" && typeof data.Sender === "number") {
+				if (data.Sender === w.Player.MemberNumber)
+					return;
 				const { type, message } = data.Dictionary;
 				if (typeof type === "string") {
 					const handler = hiddenMessageHandlers.get(type);
@@ -469,7 +473,7 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 
 		// Common patches
 		w.AsylumEntranceCanWander = () => true;
-		w.CheatValidate = () => {};
+		w.CheatValidate = () => { };
 		w.CheatAllow = true;
 		for (const C of CheatList) {
 			const AC = localStorage.getItem("BondageClubCheat" + C);
@@ -520,6 +524,14 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 			return element != null && element.scrollHeight - element.scrollTop - element.clientHeight <= 1;
 		};
 
+		if (isR66) {
+			const o_NotificationReset = w.NotificationReset;
+			w.NotificationReset = (eventType) => {
+				if (NotificationEvents)
+					return o_NotificationReset(eventType);
+			}
+		}
+
 		// Cheats
 
 		const o_Player_CanChange = w.Player.CanChange;
@@ -534,12 +546,13 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 		let BeepTargetName = "";
 
 		const FriendListRun_o = w.FriendListRun;
-		w.FriendListRun = () => {
-			FriendListRun_o();
-			if (BeepTarget !== null) {
-				ElementPositionFix("FriendListBeep", 36, 5, 75, 1985, 890);
-			}
-		};
+		if (!isR66)
+			w.FriendListRun = () => {
+				FriendListRun_o();
+				if (BeepTarget !== null) {
+					ElementPositionFix("FriendListBeep", 36, 5, 75, 1985, 890);
+				}
+			};
 
 		function MakeBeepMenu(MemberNumber, MemberName, data = null) {
 			if (BeepTarget == null) {
@@ -628,21 +641,24 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 			if (CurrentScreen == "FriendList") ServerSend("AccountQuery", { Query: "OnlineFriends" });
 		});
 
-		w.FriendListBeep = MakeBeepMenu;
+		if (!isR66)
+			w.FriendListBeep = MakeBeepMenu;
 
 		const o_FriendListExit = w.FriendListExit;
-		w.FriendListExit = () => {
-			BeepMenuClose();
-			o_FriendListExit();
-			FriendListModeIndex = 0;
-		};
+		if (!isR66)
+			w.FriendListExit = () => {
+				BeepMenuClose();
+				o_FriendListExit();
+				FriendListModeIndex = 0;
+			};
 
 		const o_ChatRoomClearAllElements = w.ChatRoomClearAllElements;
-		w.ChatRoomClearAllElements = () => {
-			BeepMenuClose();
-			o_ChatRoomClearAllElements();
-			FriendListModeIndex = 0;
-		};
+		if (!isR66)
+			w.ChatRoomClearAllElements = () => {
+				BeepMenuClose();
+				o_ChatRoomClearAllElements();
+				FriendListModeIndex = 0;
+			};
 
 		hiddenBeepHandlers.set("hello", (from, message) => {
 			if (message) {
@@ -656,43 +672,46 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 		});
 
 		const o_FriendListLoadFriendList = w.FriendListLoadFriendList;
-		w.FriendListLoadFriendList = data => {
-			o_FriendListLoadFriendList(data);
-			if (FriendListMode[FriendListModeIndex] === "Beeps") {
-				j_UnreadMessages = false;
-				const PrivateRoomCaption = DialogFind(Player, "PrivateRoom");
-				const SentCaption = DialogFind(Player, "SentBeep");
-				const ReceivedCaption = DialogFind(Player, "ReceivedBeep");
-				const SpaceAsylumCaption = DialogFind(Player, "ChatRoomSpaceAsylum");
-				let Content = "";
-				for (let i = FriendListBeepLog.length - 1; i >= 0; i--) {
-					const B = FriendListBeepLog[i];
-					Content += "<div class='FriendListRow'>";
-					Content += "<div class='FriendListTextColumn FriendListFirstColumn'>" + B.MemberName + "</div>";
-					Content += "<div class='FriendListTextColumn'>" + (B.MemberNumber != null ? B.MemberNumber.toString() : "-") + "</div>";
-					Content +=
-						"<div class='FriendListTextColumn'>" +
-						(B.ChatRoomName == null ? "-" : (B.ChatRoomSpace ? B.ChatRoomSpace.replace("Asylum", SpaceAsylumCaption) + " - " : "") + B.ChatRoomName.replace("-Private-", PrivateRoomCaption)) +
-						"</div>";
-					if (B.Message) {
-						Content += `<div class='FriendListLinkColumn' onclick="ShowBeep(${i})">${B.Sent ? SentCaption : ReceivedCaption} ${TimerHourToString(B.Time)} (Mail)</div>`;
-					} else {
-						Content += "<div class='FriendListTextColumn'>" + (B.Sent ? SentCaption : ReceivedCaption) + " " + TimerHourToString(B.Time) + "</div>";
+		if (!isR66)
+			w.FriendListLoadFriendList = data => {
+				o_FriendListLoadFriendList(data);
+				if (FriendListMode[FriendListModeIndex] === "Beeps") {
+					j_UnreadMessages = false;
+					const PrivateRoomCaption = DialogFind(Player, "PrivateRoom");
+					const SentCaption = DialogFind(Player, "SentBeep");
+					const ReceivedCaption = DialogFind(Player, "ReceivedBeep");
+					const SpaceAsylumCaption = DialogFind(Player, "ChatRoomSpaceAsylum");
+					let Content = "";
+					for (let i = FriendListBeepLog.length - 1; i >= 0; i--) {
+						const B = FriendListBeepLog[i];
+						Content += "<div class='FriendListRow'>";
+						Content += "<div class='FriendListTextColumn FriendListFirstColumn'>" + B.MemberName + "</div>";
+						Content += "<div class='FriendListTextColumn'>" + (B.MemberNumber != null ? B.MemberNumber.toString() : "-") + "</div>";
+						Content +=
+							"<div class='FriendListTextColumn'>" +
+							(B.ChatRoomName == null ? "-" : (B.ChatRoomSpace ? B.ChatRoomSpace.replace("Asylum", SpaceAsylumCaption) + " - " : "") + B.ChatRoomName.replace("-Private-", PrivateRoomCaption)) +
+							"</div>";
+						if (B.Message) {
+							Content += `<div class='FriendListLinkColumn' onclick="ShowBeep(${i})">${B.Sent ? SentCaption : ReceivedCaption} ${TimerHourToString(B.Time)} (Mail)</div>`;
+						} else {
+							Content += "<div class='FriendListTextColumn'>" + (B.Sent ? SentCaption : ReceivedCaption) + " " + TimerHourToString(B.Time) + "</div>";
+						}
+						Content += "</div>";
 					}
-					Content += "</div>";
+					ElementContent("FriendList", Content);
 				}
-				ElementContent("FriendList", Content);
-			}
-		};
+			};
 
-		w.ShowBeep = i => {
-			const beep = FriendListBeepLog[i];
-			if (beep) {
-				MakeBeepMenu(beep.MemberNumber, beep.MemberName, beep);
-			}
-		};
+		if (!isR66)
+			w.ShowBeep = i => {
+				const beep = FriendListBeepLog[i];
+				if (beep) {
+					MakeBeepMenu(beep.MemberNumber, beep.MemberName, beep);
+				}
+			};
 
-		addStyle(`
+		if (!isR66)
+			addStyle(`
 #FriendListBeep {
 	background: #000000AA;
 	display: flex !important;
@@ -888,7 +907,7 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 					}
 				}
 			}
-			if (Char.JMod) {
+			if (Char.JMod || Char.ID == 0) {
 				Friend = true;
 				Color = "#3737ed";
 			}
@@ -908,12 +927,16 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 				if (Array.isArray(ChatRoomData.Admin) && ChatRoomData.Admin.includes(C.MemberNumber)) {
 					DrawImageResize("Icons/Small/Admin.png", CharX + 125 * Zoom, CharY, 50 * Zoom, 50 * Zoom);
 				}
+				// Warning icon when game versions don't match
+				if (isR66 && C.OnlineSharedSettings && C.OnlineSharedSettings.GameVersion !== GameVersion) {
+					DrawImageResize("Icons/Small/Warning.png", CharX + 325 * Zoom, CharY, 50 * Zoom, 50 * Zoom);
+				}
 				if (Player.GhostList.includes(C.MemberNumber)) {
 					DrawImageResize("Icons/Small/GhostList.png", CharX + 375 * Zoom, CharY, 50 * Zoom, 50 * Zoom);
 				} else ChatRoomDrawFriendList(C, Zoom, CharX, CharY);
 			}
 
-			switch (C.Status) {
+			switch (C.ID == 0 ? ChatroomSM.Status : C.Status) {
 				case ChatroomSM.StatusTypes.Typing:
 					DrawImageResize(icon_Typing, CharX + 375 * Zoom, CharY + 50 * Zoom, 50 * Zoom, 50 * Zoom);
 					break;
@@ -927,6 +950,29 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 
 			if (ChatRoomTargetMemberNumber == C.MemberNumber && ChatRoomHideIconState <= 1) {
 				DrawImage("Icons/Small/Whisper.png", CharX + 75 * Zoom, CharY + 950 * Zoom);
+			}
+
+			if (isR66 && ChatRoomMoveTarget !== null) {
+				const MoveTargetPos = ChatRoomCharacter.findIndex(c => c.MemberNumber === ChatRoomMoveTarget);
+				if (MoveTargetPos < 0) {
+					ChatRoomMoveTarget = null;
+				} else {
+					if (ChatRoomMoveTarget === C.MemberNumber) {
+						DrawButton(CharX + 200 * Zoom, CharY + 750 * Zoom, 90 * Zoom, 90 * Zoom, "", "White");
+						DrawImageResize("Icons/Remove.png", CharX + 202 * Zoom, CharY + 752 * Zoom, 86 * Zoom, 86 * Zoom);
+					} else {
+						if (Pos < MoveTargetPos) {
+							DrawButton(CharX + 100 * Zoom, CharY + 750 * Zoom, 90 * Zoom, 90 * Zoom, "", "White");
+							DrawImageResize("Icons/Here.png", CharX + 102 * Zoom, CharY + 752 * Zoom, 86 * Zoom, 86 * Zoom);
+						}
+						DrawButton(CharX + 200 * Zoom, CharY + 750 * Zoom, 90 * Zoom, 90 * Zoom, "", "White");
+						DrawImageResize("Icons/Swap.png", CharX + 202 * Zoom, CharY + 752 * Zoom, 86 * Zoom, 86 * Zoom);
+						if (Pos > MoveTargetPos) {
+							DrawButton(CharX + 300 * Zoom, CharY + 750 * Zoom, 90 * Zoom, 90 * Zoom, "", "White");
+							DrawImageResize("Icons/Here.png", CharX + 302 * Zoom, CharY + 752 * Zoom, 86 * Zoom, 86 * Zoom);
+						}
+					}
+				}
 			}
 		};
 
