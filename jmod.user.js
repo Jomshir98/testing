@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Jmod - Bondage Club
 // @namespace    jmod
-// @version      1.6.0
+// @version      1.6.1
 // @description  Jomshir's collection of changes and patches for Bondage Club
 // @author       jomshir98
 // @match        https://www.bondageprojects.elementfx.com/*/BondageClub/*
@@ -27,7 +27,7 @@ window.setTimeout(
 			return;
 		}
 
-		const version = "1.6.0";
+		const version = "1.6.1";
 
 		//#region Utils
 
@@ -179,9 +179,17 @@ window.setTimeout(
 					if (!w.j_Allow(true)) return false;
 					AssetGroup.forEach(G => G.Description = G.Name);
 					Asset.forEach(A => A.Description = A.Group.Name + ":" + A.Name);
+					BackgroundSelectionAll.forEach(B => {
+						B.Description = B.Name;
+						B.Low = B.Description.toLowerCase();
+					});
 					console.warn("Developer mode enabled");
 				} else {
 					AssetLoadDescription("Female3DCG");
+					BackgroundSelectionAll.forEach(B => {
+						B.Description = DialogFindPlayer(B.Name);
+						B.Low = B.Description.toLowerCase();
+					});
 					console.info("Developer mode disabled");
 				}
 				j_Devel = devel;
@@ -597,6 +605,14 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 			} else {
 				return ExtendedItemDraw_o(...args);
 			}
+		}
+
+		const DialogDrawItemMenu_o = w.DialogDrawItemMenu;
+		w.DialogDrawItemMenu = (C) => {
+			if (j_Devel) {
+				w.DialogTextDefault = C.FocusGroup.Description;
+			}
+			DialogDrawItemMenu_o(C);
 		}
 
 		//#endregion
