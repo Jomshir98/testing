@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Jmod - Bondage Club
 // @namespace    jmod
-// @version      1.5.4
+// @version      1.6.0
 // @description  Jomshir's collection of changes and patches for Bondage Club
 // @author       jomshir98
 // @match        https://www.bondageprojects.elementfx.com/*/BondageClub/*
@@ -27,12 +27,11 @@ window.setTimeout(
 			return;
 		}
 
-		// Utils
+		const version = "1.6.0";
+
+		//#region Utils
 
 		const clipboardAvailable = Boolean(navigator.clipboard);
-
-		const version = "1.5.4";
-
 		const isR66 = !!(window.GameVersion?.startsWith("R66"));
 
 		// Loading into already loaded club - clear some caches
@@ -150,19 +149,46 @@ window.setTimeout(
 			return true;
 		}
 
-		// Tools
+		//#endregion
+
+		//#region Tools
 
 		let j_Allow = false;
 		w.j_Allow = function _j_Allow(allow) {
 			if (typeof allow === "boolean") {
+				if (j_Allow === allow)
+					return true;
 				j_Allow = allow;
 				if (allow) {
 					console.warn("Cheats enabled; please be careful not to break things");
 				} else {
+					w.j_Devel(false);
 					console.info("Cheats disabled");
 				}
+				return true;
 			}
+			return false;
 		};
+
+		let j_Devel = false;
+		w.j_Devel = function _j_Devel(devel) {
+			if (typeof devel === "boolean") {
+				if (j_Devel === devel)
+					return true;
+				if (devel) {
+					if (!w.j_Allow(true)) return false;
+					AssetGroup.forEach(G => G.Description = G.Name);
+					Asset.forEach(A => A.Description = A.Group.Name + ":" + A.Name);
+					console.warn("Developer mode enabled");
+				} else {
+					AssetLoadDescription("Female3DCG");
+					console.info("Developer mode disabled");
+				}
+				j_Devel = devel;
+				return true;
+			}
+			return false;
+		}
 
 		function InfoBeep(msg) {
 			console.log("Jmod msg:", msg);
@@ -189,10 +215,14 @@ window.setTimeout(
 				});
 		}
 
-		const o_ChatRoomMessage = w.ChatRoomMessage;
+		const ChatRoomMessage_o = w.ChatRoomMessage;
+		const ChatRoomMessage_patch = eval("(" + ChatRoomMessage_o.toString()
+			.replace(`Asset[A].DynamicDescription(SourceCharacter || Player).toLowerCase()`, `Asset[A].Description`)
+			.replace(`AssetGroup[A].Description.toLowerCase()`, `AssetGroup[A].Description`)
+			+ ")");
 
 		function ChatRoomSendLocal(msg) {
-			o_ChatRoomMessage({
+			ChatRoomMessage_o({
 				Sender: Player.MemberNumber,
 				Type: "Whisper",
 				Content: msg
@@ -273,7 +303,11 @@ window.setTimeout(
 				if (data?.Type === "Action" && data.Content === "ServerEnter") {
 					j_Announce(true);
 				}
-				return o_ChatRoomMessage(data);
+				if (j_Devel) {
+					return ChatRoomMessage_patch(data);
+				} else {
+					return ChatRoomMessage_o(data);
+				}
 			}
 		};
 
@@ -302,7 +336,9 @@ window.setTimeout(
 
 		let j_UnreadMessages = false;
 
-		// Controlable patches
+		//#endregion
+
+		//#region Controlable patches
 
 		const o_SpeechGarble = w.SpeechGarble;
 		let antigarble = 0;
@@ -314,7 +350,9 @@ window.setTimeout(
 			return res;
 		};
 
-		// Chat control
+		//#endregion
+
+		//#region Chat control
 
 		const o_ChatRoomSendChat = w.ChatRoomSendChat;
 
@@ -370,7 +408,9 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 			return true;
 		}
 
-		// Wardrobe
+		//#endregion
+
+		//#region Wardrobe
 
 		function j_WardrobeExportSelectionClothes(includeBinds = false) {
 			const save = w.CharacterAppearanceSelection.Appearance.filter(a => j_IsCloth(a, true) || (includeBinds && j_IsBind(a))).map(w.WardrobeAssetBundle);
@@ -471,7 +511,9 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 			}
 		});
 
-		// Common patches
+		//#endregion
+
+		//#region Common patches
 		w.AsylumEntranceCanWander = () => true;
 		w.CheatValidate = () => { };
 		w.CheatAllow = true;
@@ -532,7 +574,9 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 			}
 		}
 
-		// Cheats
+		//#endregion
+
+		//#region Cheats
 
 		const o_Player_CanChange = w.Player.CanChange;
 		w.Player.CanChange = () => j_Allow || o_Player_CanChange.call(w.Player);
@@ -540,7 +584,24 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 		const o_ChatRoomCanLeave = w.ChatRoomCanLeave;
 		w.ChatRoomCanLeave = () => j_Allow || o_ChatRoomCanLeave();
 
-		// Testing stuff
+		//#endregion
+
+		//#region Devel
+
+		const ExtendedItemDraw_o = w.ExtendedItemDraw;
+		const ExtendedItemDraw_patched = eval("(" + ExtendedItemDraw_o.toString().replace(`DialogFindPlayer(DialogPrefix + Option.Name)`, `JSON.stringify(Option.Property.Type)`) + ")");
+
+		w.ExtendedItemDraw = (...args) => {
+			if (j_Devel) {
+				return ExtendedItemDraw_patched(...args);
+			} else {
+				return ExtendedItemDraw_o(...args);
+			}
+		}
+
+		//#endregion
+
+		//#region Testing stuff
 
 		let BeepTarget = null;
 		let BeepTargetName = "";
@@ -756,8 +817,9 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 	color: cyan !important;
 }
 `);
+		//#endregion
 
-		// Multiplayer interactive
+		//#region Multiplayer interactive
 		class ChatRoomStatusManager {
 			constructor() {
 				this.InputTimeoutMs = 3 * 1000;
@@ -976,7 +1038,9 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 			}
 		};
 
-		// Other mod compatability
+		//#endregion
+
+		//#region Other mod compatability
 
 		const IsSMod = typeof w.ChatControlHead === "function";
 		const HasBondageClubTools = ServerSocket.listeners("ChatRoomMessage").some(i => i.toString().includes("window.postMessage"));
@@ -1008,6 +1072,8 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 				return w.ServerAccountBeep(data);
 			});
 		}
+
+		//#endregion
 
 		j_Announce(true);
 		InfoBeep(`Jmod loaded! Version: ${version}`);
