@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Jmod - Bondage Club
 // @namespace    jmod
-// @version      1.6.1
+// @version      1.6.2
 // @description  Jomshir's collection of changes and patches for Bondage Club
 // @author       jomshir98
 // @match        https://www.bondageprojects.elementfx.com/*/BondageClub/*
@@ -16,7 +16,7 @@ const icon_Emote = `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAYAAA
 const icon_Typing = `data:image/png;base64,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`;
 const icon_Letter = `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAYAAAAeP4ixAAAABmJLR0QA/wD/AP+gvaeTAAAErklEQVRo3u2ZW0hqWRjH1zYlg9PUnCki50HooSCiAkPMLlRGRhQUBA1RkkEvEfRWTzFW2BUTuzyV5yGm60BFb0H0ENj9oSCKoFMnzUosM3Ynae/0m4eDQ6utqY2ny7D/sEBca/3X99uXb30uEWLFihUrVqxY/X9EIISQXq//bWJi4k+bzSZzOp2/HB8fI7FYHMnhcD7Z7XZ0c3ODSJJEDocDORwORFEUcrlcrxMgQSA+n4/Cw8NRVFQUiomJQSRJXpEkeSUUCuctFotqZ2fnO1IoFAKhUPgNIQQfsaWnp39taGj4HMLj8b7s7+9LP+ojdXp6+itBEL8jHo+HEUZERMDW1ha8V21sbABBEFjMAoHAibzdssXFxXcHMT8//9xj9uNDaGgoo3NqagpcLtebAzw8PMDY2Jiv9+XHh/r6ejAYDIwBWq0WKIp6MwiKoqCrq4sR1/LysncQAIDt7W1ISUnBBrW2tsLt7e2rQ9zc3EBzczMWi1gsht3dXQAA4HA43kEAAE5OTiArKwszqK2tBbvd/moQl5eXoFQqsRjkcjkYjcZ/xwgEgudBAACsVivU1NRgRiUlJZjRz9LJyQlkZmZiayuVSri+vsbGJSQk+AZx39qmpibMUCKRwN7e3k+D2N7ehuTkZGxNlUrl8dFOTU31D8Tby8blcmF9fT3oEB5eYNBoNF6TTXp6uv8g7vQ3OjrKWGRmZiYoAC6XC6anpxn+k5OT4HQ6vc7Lzs4ODMStubk5xmLDw8NA0/SLIWiaBq1Wy/BdWFjwOTc3N/dlIAAAa2trjEXVajXc3d0FDEGSJKhUKswrJCQENjc3/Zovk8leDmI0GkEsFjNg6urqAkrPNpuNkV7d+4S/mbGgoOBlIEajESQSidcyoaysDEwmk18+eXl5z5XmfsHI5fLAQYxG49MsAWq1mnFVfaVnT5VDXV0dtLW1Yd9lZGTA6elpcEFMJhNIpVJsoe7ubqBpGkiShNbWVqyPw+GAwWBg+CwtLTGufkdHBzgcDqBpGjo7O7E+mUwG5+fnwQExmUyMcqWvrw/LVBRFgU6n81g9UxQF9/f3MD4+zujX6/WYD03T0Nvbi40pKioCi8Xy30DMZjPk5ORgxv39/fDw8OD3XuCtzc7Oek3HGo0GG1taWgpWq/VlIGdnZ5Cfn48ZDgwMeIR4LIPBAFwu1ysAn8/3WRXQNA09PT3YvPLycri8vAwM5OLiAgoLCzGjoaEhnxBuHR0dQWVlJQOiuroajo6O/N4on8JUVFTA1dWVfyAWiwWKi4tfDPG4rDk4OICVlRVYXV2Fw8PDgH9tekoAlZWVYLPZngexWq1QWlqKTdTpdAFDBFOeYKqqquD6+tozSElJCZSXlz+bnd4SpqOjA4tNoVCASCRigjxt7n3ivYiiKAaMu0VGRgLylGE6OzvfFcTjO9Pe3s6IVyqVniGRSPR3MI8wCYLw2YJ9bJqWlvYXamlpEcTGxn7Ys9+MjIyvIyMjgpDl5WWysbFxjKbpCLPZjBITE11JSUmfnE4n4XA4Xu3U3deJfFhYGIqOjkbx8fEoLi7uO4/H+yaRSL5QFPXH4OCgjf1jhRUrVqxYsUII/QO1gKIk0DWwZAAAAABJRU5ErkJggg==`;
 
-window.setTimeout(
+setTimeout(
 	function () {
 		"use strict";
 		const w = window.unsafeWindow || window;
@@ -27,12 +27,12 @@ window.setTimeout(
 			return;
 		}
 
-		const version = "1.6.1";
+		const version = "1.6.2";
 
 		//#region Utils
 
 		const clipboardAvailable = Boolean(navigator.clipboard);
-		const isR66 = !!(window.GameVersion?.startsWith("R66"));
+		const isR66 = !!(w.GameVersion?.startsWith("R66"));
 
 		// Loading into already loaded club - clear some caches
 		DrawRunMap.clear();
@@ -487,7 +487,7 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 				}
 				// Export
 				if (w.MouseIn(1534, Y, 207, 50)) {
-					window.setTimeout(async () => {
+					setTimeout(async () => {
 						await navigator.clipboard.writeText(j_WardrobeExportSelectionClothes(j_WardrobeIncludeBinds));
 						w.CharacterAppearanceWardrobeText = "Copied to clipboard!";
 					}, 0);
@@ -495,7 +495,7 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 				}
 				// Import
 				if (w.MouseIn(1768, Y, 207, 50)) {
-					window.setTimeout(async () => {
+					setTimeout(async () => {
 						if (typeof navigator.clipboard.readText !== "function") {
 							w.CharacterAppearanceWardrobeText = "Please press Ctrl+V";
 							return;
@@ -513,7 +513,7 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 			if (CurrentScreen === "Appearance" && CharacterAppearanceMode === "Wardrobe") {
 				ev.preventDefault();
 				ev.stopImmediatePropagation();
-				const data = (ev.clipboardData || window.clipboardData).getData("text");
+				const data = (ev.clipboardData || w.clipboardData).getData("text");
 				const res = j_WardrobeImportSelectionClothes(data, j_WardrobeIncludeBinds, j_Allow);
 				w.CharacterAppearanceWardrobeText = res !== true ? `Import error: ${res}` : "Imported!";
 			}
@@ -900,9 +900,9 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 						target = ChatRoomTargetMemberNumber;
 					}
 					if (this.InputTimeout !== null) {
-						window.clearTimeout(this.InputTimeout);
+						clearTimeout(this.InputTimeout);
 					}
-					this.InputTimeout = window.setTimeout(this.InputEnd.bind(this), this.InputTimeoutMs);
+					this.InputTimeout = setTimeout(this.InputEnd.bind(this), this.InputTimeoutMs);
 					this.SetStatus(type, target);
 				} else {
 					this.InputEnd();
@@ -911,7 +911,7 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 
 			InputEnd() {
 				if (this.InputTimeout !== null) {
-					window.clearTimeout(this.InputTimeout);
+					clearTimeout(this.InputTimeout);
 					this.InputTimeout = null;
 				}
 				this.SetStatus(this.StatusTypes.None);
