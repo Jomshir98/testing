@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Jmod - Bondage Club
 // @namespace    jmod
-// @version      1.6.2
+// @version      1.6.3
 // @description  Jomshir's collection of changes and patches for Bondage Club
 // @author       jomshir98
 // @match        https://www.bondageprojects.elementfx.com/*/BondageClub/*
@@ -27,7 +27,7 @@ setTimeout(
 			return;
 		}
 
-		const version = "1.6.2";
+		const version = "1.6.3";
 
 		//#region Utils
 
@@ -421,7 +421,7 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 		//#region Wardrobe
 
 		function j_WardrobeExportSelectionClothes(includeBinds = false) {
-			const save = w.CharacterAppearanceSelection.Appearance.filter(a => j_IsCloth(a, true) || (includeBinds && j_IsBind(a))).map(w.WardrobeAssetBundle);
+			const save = w.CharacterAppearanceSelection.Appearance.filter(a => j_IsCloth(a, true) || (includeBinds && j_IsBind(a))).map(A => ({ Name: A.Asset.Name, Group: A.Asset.Group.Name, Color: A.Color, Property: A.Property }));
 			return LZString.compressToBase64(JSON.stringify(save));
 		}
 
@@ -522,6 +522,9 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 		//#endregion
 
 		//#region Common patches
+
+		w.onbeforeunload = () => (!IsSMod ? "Are you sure you want to leave?" : undefined);
+
 		w.AsylumEntranceCanWander = () => true;
 		w.CheatValidate = () => { };
 		w.CheatAllow = true;
