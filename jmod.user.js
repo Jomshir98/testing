@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Jmod - Bondage Club
 // @namespace    jmod
-// @version      1.6.3
+// @version      1.6.4
 // @description  Jomshir's collection of changes and patches for Bondage Club
 // @author       jomshir98
 // @match        https://www.bondageprojects.elementfx.com/*/BondageClub/*
@@ -27,7 +27,7 @@ setTimeout(
 			return;
 		}
 
-		const version = "1.6.3";
+		const version = "1.6.4";
 
 		//#region Utils
 
@@ -997,7 +997,7 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 			}
 		}
 
-		w.ChatRoomDrawCharacterOverlay = (C, CharX, CharY, Zoom) => {
+		w.ChatRoomDrawCharacterOverlay = (C, CharX, CharY, Zoom, Pos) => {
 			// Draw the ghostlist/friendlist, whitelist/blacklist, admin icons
 			if (ChatRoomHideIconState == 0) {
 				if (Player.WhiteList.includes(C.MemberNumber)) {
