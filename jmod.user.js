@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Jmod - Bondage Club
 // @namespace    jmod
-// @version      1.6.4
+// @version      1.7.0
 // @description  Jomshir's collection of changes and patches for Bondage Club
 // @author       jomshir98
 // @match        https://www.bondageprojects.elementfx.com/*/BondageClub/*
@@ -27,12 +27,15 @@ setTimeout(
 			return;
 		}
 
-		const version = "1.6.4";
+		const version = "1.7.0";
 
 		//#region Utils
 
 		const clipboardAvailable = Boolean(navigator.clipboard);
-		const isR66 = !!(w.GameVersion?.startsWith("R66"));
+
+		// Other mod detection
+		const IsSMod = typeof w.ChatControlHead === "function";
+		const HasBondageClubTools = ServerSocket.listeners("ChatRoomMessage").some(i => i.toString().includes("window.postMessage"));
 
 		// Loading into already loaded club - clear some caches
 		DrawRunMap.clear();
@@ -243,7 +246,10 @@ setTimeout(
 		}
 
 		const ChatRoomMessage_o = w.ChatRoomMessage;
-		const ChatRoomMessage_patch = PatchFunction(ChatRoomMessage_o, {
+		const ChatRoomMessage_patch = PatchFunction(ChatRoomMessage_o, IsSMod ? {
+			"A.DynamicDescription(Source).toLowerCase()": `Asset[A].Description`,
+			"G.Description.toLowerCase()": `AssetGroup[A].Description`
+		} : {
 			"Asset[A].DynamicDescription(SourceCharacter || Player).toLowerCase()": `Asset[A].Description`,
 			"AssetGroup[A].Description.toLowerCase()": `AssetGroup[A].Description`
 		});
@@ -560,6 +566,7 @@ PoseOptionsAvailable - Player can select pose even outside of chatroom
 			InventoryAdd(Player, "MistressPadlock", "ItemMisc", false);
 			InventoryAdd(Player, "MistressPadlockKey", "ItemMisc", false);
 			InventoryAdd(Player, "MistressTimerPadlock", "ItemMisc", false);
+			InventoryAdd(Player, "DeluxeBoots", "Shoes", false);
 		};
 
 		w.LoginStableItems = () => {
@@ -595,14 +602,6 @@ PoseOptionsAvailable - Player can select pose even outside of chatroom
 			const element = document.getElementById(ID);
 			return element != null && element.scrollHeight - element.scrollTop - element.clientHeight <= 1;
 		};
-
-		if (isR66) {
-			const o_NotificationReset = w.NotificationReset;
-			w.NotificationReset = (eventType) => {
-				if (NotificationEvents)
-					return o_NotificationReset(eventType);
-			}
-		}
 
 		//#endregion
 
@@ -663,220 +662,6 @@ PoseOptionsAvailable - Player can select pose even outside of chatroom
 
 		//#region Testing stuff
 
-		let BeepTarget = null;
-		let BeepTargetName = "";
-
-		const FriendListRun_o = w.FriendListRun;
-		if (!isR66)
-			w.FriendListRun = () => {
-				FriendListRun_o();
-				if (BeepTarget !== null) {
-					ElementPositionFix("FriendListBeep", 36, 5, 75, 1985, 890);
-				}
-			};
-
-		function MakeBeepMenu(MemberNumber, MemberName, data = null) {
-			if (BeepTarget == null) {
-				ElementCreateDiv("FriendListBeep");
-				ElementPositionFix("FriendListBeep", 36, 5, 75, 1985, 890);
-			}
-			const FriendListBeep = document.getElementById("FriendListBeep");
-			BeepTarget = MemberNumber;
-			BeepTargetName = MemberName;
-			FriendListBeep.innerHTML = "";
-			const dialog = document.createElement("div");
-			const user = document.createElement("div");
-			user.innerText = `${MemberName} [${MemberNumber}]`;
-			const messageArea = document.createElement("textarea");
-			messageArea.id = "FriendListBeepTextArea";
-			messageArea.maxLength = 1000;
-			messageArea.readOnly = true;
-			messageArea.value = data?.Message || "";
-			const footer = document.createElement("div");
-			const closeBtn = document.createElement("a");
-			closeBtn.innerText = "Close";
-			closeBtn.onclick = BeepMenuClose;
-			footer.append(closeBtn);
-			if (data === null) {
-				const sendBtn = document.createElement("a");
-				sendBtn.innerText = "Send";
-				sendBtn.onclick = BeepMenuSend;
-				footer.append(sendBtn);
-			}
-			dialog.append(data === null ? "Send Beep" : data.Sent ? "Sent Beep" : "Received Beep", user, messageArea, footer);
-			FriendListBeep.append(dialog);
-			if (data === null) {
-				j_SendHiddenBeep("hello", true, MemberNumber);
-			}
-		}
-
-		function BeepMenuClose() {
-			ElementRemove("FriendListBeep");
-			BeepTarget = null;
-		}
-
-		function BeepMenuSend() {
-			if (BeepTarget !== null) {
-				const textarea = document.getElementById("FriendListBeepTextArea");
-				if (textarea) {
-					const msg = textarea.value;
-					if (msg) {
-						j_SendHiddenBeep("beepmsg", msg, BeepTarget);
-					} else {
-						ServerSend("AccountBeep", { MemberNumber: BeepTarget, BeepType: "" });
-					}
-					FriendListBeepLog.push({
-						MemberNumber: BeepTarget,
-						MemberName: BeepTargetName,
-						ChatRoomName: ChatRoomData == null ? null : ChatRoomData.Name,
-						Sent: true,
-						Time: new Date(),
-						Message: msg
-					});
-				}
-				BeepMenuClose();
-			}
-		}
-
-		hiddenBeepHandlers.set("beepmsg", (from, msg, data) => {
-			j_UnreadMessages = true;
-			ServerBeep.MemberNumber = data.MemberNumber;
-			ServerBeep.MemberName = data.MemberName;
-			ServerBeep.ChatRoomName = data.ChatRoomName;
-			ServerBeep.Timer = CurrentTime + 10000;
-			if (Player.AudioSettings && Player.AudioSettings.PlayBeeps) {
-				ServerBeepAudio.volume = Player.AudioSettings.Volume;
-				ServerBeepAudio.play();
-			}
-			ServerBeep.Message = `${DialogFind(Player, "BeepFrom")} ${ServerBeep.MemberName} (${ServerBeep.MemberNumber}); With message`;
-			if (ServerBeep.ChatRoomName != null) ServerBeep.Message = ServerBeep.Message + " " + DialogFind(Player, "InRoom") + ' "' + ServerBeep.ChatRoomName + '" ' + (data.ChatRoomSpace === "Asylum" ? DialogFind(Player, "InAsylum") : "");
-			FriendListBeepLog.push({
-				MemberNumber: data.MemberNumber,
-				MemberName: data.MemberName,
-				ChatRoomName: data.ChatRoomName,
-				ChatRoomSpace: data.ChatRoomSpace,
-				Sent: false,
-				Time: new Date(),
-				Message: msg
-			});
-			if (CurrentScreen == "FriendList") ServerSend("AccountQuery", { Query: "OnlineFriends" });
-		});
-
-		if (!isR66)
-			w.FriendListBeep = MakeBeepMenu;
-
-		const o_FriendListExit = w.FriendListExit;
-		if (!isR66)
-			w.FriendListExit = () => {
-				BeepMenuClose();
-				o_FriendListExit();
-				FriendListModeIndex = 0;
-			};
-
-		const o_ChatRoomClearAllElements = w.ChatRoomClearAllElements;
-		if (!isR66)
-			w.ChatRoomClearAllElements = () => {
-				BeepMenuClose();
-				o_ChatRoomClearAllElements();
-				FriendListModeIndex = 0;
-			};
-
-		hiddenBeepHandlers.set("hello", (from, message) => {
-			if (message) {
-				j_SendHiddenBeep("hello", false, from);
-			} else if (BeepTarget === from) {
-				const elem = document.getElementById("FriendListBeepTextArea");
-				if (elem) {
-					elem.readOnly = false;
-				}
-			}
-		});
-
-		const o_FriendListLoadFriendList = w.FriendListLoadFriendList;
-		if (!isR66)
-			w.FriendListLoadFriendList = data => {
-				o_FriendListLoadFriendList(data);
-				if (FriendListMode[FriendListModeIndex] === "Beeps") {
-					j_UnreadMessages = false;
-					const PrivateRoomCaption = DialogFind(Player, "PrivateRoom");
-					const SentCaption = DialogFind(Player, "SentBeep");
-					const ReceivedCaption = DialogFind(Player, "ReceivedBeep");
-					const SpaceAsylumCaption = DialogFind(Player, "ChatRoomSpaceAsylum");
-					let Content = "";
-					for (let i = FriendListBeepLog.length - 1; i >= 0; i--) {
-						const B = FriendListBeepLog[i];
-						Content += "<div class='FriendListRow'>";
-						Content += "<div class='FriendListTextColumn FriendListFirstColumn'>" + B.MemberName + "</div>";
-						Content += "<div class='FriendListTextColumn'>" + (B.MemberNumber != null ? B.MemberNumber.toString() : "-") + "</div>";
-						Content +=
-							"<div class='FriendListTextColumn'>" +
-							(B.ChatRoomName == null ? "-" : (B.ChatRoomSpace ? B.ChatRoomSpace.replace("Asylum", SpaceAsylumCaption) + " - " : "") + B.ChatRoomName.replace("-Private-", PrivateRoomCaption)) +
-							"</div>";
-						if (B.Message) {
-							Content += `<div class='FriendListLinkColumn' onclick="ShowBeep(${i})">${B.Sent ? SentCaption : ReceivedCaption} ${TimerHourToString(B.Time)} (Mail)</div>`;
-						} else {
-							Content += "<div class='FriendListTextColumn'>" + (B.Sent ? SentCaption : ReceivedCaption) + " " + TimerHourToString(B.Time) + "</div>";
-						}
-						Content += "</div>";
-					}
-					ElementContent("FriendList", Content);
-				}
-			};
-
-		if (!isR66)
-			w.ShowBeep = i => {
-				const beep = FriendListBeepLog[i];
-				if (beep) {
-					MakeBeepMenu(beep.MemberNumber, beep.MemberName, beep);
-				}
-			};
-
-		if (!isR66)
-			addStyle(`
-#FriendListBeep {
-	background: #000000AA;
-	display: flex !important;
-	justify-content: center;
-	align-items: center;
-	border: 2px solid white;
-	padding: 0 !important;
-	padding-bottom: 1% !important;
-}
-#FriendListBeep > div {
-	background: #999;
-	border: white solid 2px;
-	padding: .5em;
-	display: flex;
-	flex-direction: column;
-	width: 80%;
-	height: 80%;
-	align-items: center;
-}
-#FriendListBeep > div > * {
-	margin-top: .5em;
-}
-#FriendListBeep > div > div {
-	width: 100%;
-	display: flex;
-	justify-content: center;
-}
-#FriendListBeep textarea {
-	width: 100%;
-	height: 100%;
-	font: inherit;
-}
-#FriendListBeep a {
-	width: 50%;
-	margin: auto;
-	text-align: center;
-	text-decoration: underline;
-	user-select: none;
-	cursor: pointer;
-}
-#FriendListBeep a:hover {
-	color: cyan !important;
-}
-`);
 		//#endregion
 
 		//#region Multiplayer interactive
@@ -1038,25 +823,19 @@ PoseOptionsAvailable - Player can select pose even outside of chatroom
 			}
 		}
 
+		if (IsSMod) {
+			w.ChatRoomDrawFriendList = ChatRoomDrawFriendList;
+		}
+
+		const ChatRoomDrawCharacterOverlay_o = w.ChatRoomDrawCharacterOverlay;
+		const ChatRoomDrawCharacterOverlay_patch = PatchFunction(ChatRoomDrawCharacterOverlay_o, IsSMod ? {} : {
+			'DrawImageResize("Icons/Small/FriendList.png", CharX + 375 * Zoom, CharY, 50 * Zoom, 50 * Zoom);': ""
+		});
+
 		w.ChatRoomDrawCharacterOverlay = (C, CharX, CharY, Zoom, Pos) => {
-			// Draw the ghostlist/friendlist, whitelist/blacklist, admin icons
-			if (ChatRoomHideIconState == 0) {
-				if (Player.WhiteList.includes(C.MemberNumber)) {
-					DrawImageResize("Icons/Small/WhiteList.png", CharX + 75 * Zoom, CharY, 50 * Zoom, 50 * Zoom);
-				} else if (Player.BlackList.includes(C.MemberNumber)) {
-					DrawImageResize("Icons/Small/BlackList.png", CharX + 75 * Zoom, CharY, 50 * Zoom, 50 * Zoom);
-				}
-				if (Array.isArray(ChatRoomData.Admin) && ChatRoomData.Admin.includes(C.MemberNumber)) {
-					DrawImageResize("Icons/Small/Admin.png", CharX + 125 * Zoom, CharY, 50 * Zoom, 50 * Zoom);
-				}
-				// Warning icon when game versions don't match
-				if (isR66 && C.OnlineSharedSettings && C.OnlineSharedSettings.GameVersion !== GameVersion) {
-					DrawImageResize("Icons/Small/Warning.png", CharX + 325 * Zoom, CharY, 50 * Zoom, 50 * Zoom);
-				}
-				if (Player.GhostList.includes(C.MemberNumber)) {
-					DrawImageResize("Icons/Small/GhostList.png", CharX + 375 * Zoom, CharY, 50 * Zoom, 50 * Zoom);
-				} else ChatRoomDrawFriendList(C, Zoom, CharX, CharY);
-			}
+			ChatRoomDrawCharacterOverlay_patch(C, CharX, CharY, Zoom, Pos);
+
+			ChatRoomDrawFriendList(C, Zoom, CharX, CharY);
 
 			switch (C.ID == 0 ? ChatroomSM.Status : C.Status) {
 				case ChatroomSM.StatusTypes.Typing:
@@ -1069,41 +848,11 @@ PoseOptionsAvailable - Player can select pose even outside of chatroom
 					DrawImageResize(icon_Emote, CharX + 375 * Zoom, CharY + 50 * Zoom, 50 * Zoom, 50 * Zoom);
 					break;
 			}
-
-			if (ChatRoomTargetMemberNumber == C.MemberNumber && ChatRoomHideIconState <= 1) {
-				DrawImage("Icons/Small/Whisper.png", CharX + 75 * Zoom, CharY + 950 * Zoom);
-			}
-
-			if (isR66 && ChatRoomMoveTarget !== null) {
-				const MoveTargetPos = ChatRoomCharacter.findIndex(c => c.MemberNumber === ChatRoomMoveTarget);
-				if (MoveTargetPos < 0) {
-					ChatRoomMoveTarget = null;
-				} else {
-					if (ChatRoomMoveTarget === C.MemberNumber) {
-						DrawButton(CharX + 200 * Zoom, CharY + 750 * Zoom, 90 * Zoom, 90 * Zoom, "", "White");
-						DrawImageResize("Icons/Remove.png", CharX + 202 * Zoom, CharY + 752 * Zoom, 86 * Zoom, 86 * Zoom);
-					} else {
-						if (Pos < MoveTargetPos) {
-							DrawButton(CharX + 100 * Zoom, CharY + 750 * Zoom, 90 * Zoom, 90 * Zoom, "", "White");
-							DrawImageResize("Icons/Here.png", CharX + 102 * Zoom, CharY + 752 * Zoom, 86 * Zoom, 86 * Zoom);
-						}
-						DrawButton(CharX + 200 * Zoom, CharY + 750 * Zoom, 90 * Zoom, 90 * Zoom, "", "White");
-						DrawImageResize("Icons/Swap.png", CharX + 202 * Zoom, CharY + 752 * Zoom, 86 * Zoom, 86 * Zoom);
-						if (Pos > MoveTargetPos) {
-							DrawButton(CharX + 300 * Zoom, CharY + 750 * Zoom, 90 * Zoom, 90 * Zoom, "", "White");
-							DrawImageResize("Icons/Here.png", CharX + 302 * Zoom, CharY + 752 * Zoom, 86 * Zoom, 86 * Zoom);
-						}
-					}
-				}
-			}
 		};
 
 		//#endregion
 
 		//#region Other mod compatability
-
-		const IsSMod = typeof w.ChatControlHead === "function";
-		const HasBondageClubTools = ServerSocket.listeners("ChatRoomMessage").some(i => i.toString().includes("window.postMessage"));
 
 		if (IsSMod) {
 			console.warn("JMod: SMod load!");
