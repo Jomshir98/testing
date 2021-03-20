@@ -149,6 +149,25 @@ setTimeout(
 			return true;
 		}
 
+		/**
+		 * Patches a function, replacing some strings
+		 * @param {Function} fn The function to patch
+		 * @param {Record<string, string>} patches The patches to apply
+		 * @param {string[]} [checksum] Accepted checksums
+		 * @returns {Function}
+		 */
+		function PatchFunction(fn, patches, checksum = null) {
+			const N = `[JMod] Patching ${fn.name}`;
+			let fn_str = fn.toString();
+			for (const k of Object.keys(patches)) {
+				if (!fn_str.includes(k)) {
+					console.warn(`${N}: Patch ${k} not applied`);
+				}
+				fn_str = fn_str.replaceAll(k, patches[k]);
+			}
+			return eval(`(${fn_str})`);
+		}
+
 		//#endregion
 
 		//#region Tools
@@ -224,10 +243,10 @@ setTimeout(
 		}
 
 		const ChatRoomMessage_o = w.ChatRoomMessage;
-		const ChatRoomMessage_patch = eval("(" + ChatRoomMessage_o.toString()
-			.replace(`Asset[A].DynamicDescription(SourceCharacter || Player).toLowerCase()`, `Asset[A].Description`)
-			.replace(`AssetGroup[A].Description.toLowerCase()`, `AssetGroup[A].Description`)
-			+ ")");
+		const ChatRoomMessage_patch = PatchFunction(ChatRoomMessage_o, {
+			"Asset[A].DynamicDescription(SourceCharacter || Player).toLowerCase()": `Asset[A].Description`,
+			"AssetGroup[A].Description.toLowerCase()": `AssetGroup[A].Description`
+		});
 
 		function ChatRoomSendLocal(msg) {
 			ChatRoomMessage_o({
@@ -600,7 +619,9 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 		//#region Devel
 
 		const ExtendedItemDraw_o = w.ExtendedItemDraw;
-		const ExtendedItemDraw_patched = eval("(" + ExtendedItemDraw_o.toString().replace(`DialogFindPlayer(DialogPrefix + Option.Name)`, `JSON.stringify(Option.Property.Type)`) + ")");
+		const ExtendedItemDraw_patched = PatchFunction(ExtendedItemDraw_o, {
+			"DialogFindPlayer(DialogPrefix + Option.Name)": `JSON.stringify(Option.Property.Type)`
+		});
 
 		w.ExtendedItemDraw = (...args) => {
 			if (j_Devel) {
