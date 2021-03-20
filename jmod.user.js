@@ -32,6 +32,20 @@ setTimeout(
 		//#region Utils
 
 		const clipboardAvailable = Boolean(navigator.clipboard);
+		const encoder = new TextEncoder();
+
+		function crc32(str) {
+			let crc = 0 ^ -1;
+			for (const b of encoder.encode(str)) {
+				let c = (crc ^ b) & 0xff;
+				for (let j = 0; j < 8; j++) {
+					c = (c & 1) ? (-306674912 ^ (c >>> 1)) : (c >>> 1);
+				}
+				crc = (crc >>> 8) ^ c;
+			}
+
+			return ((crc ^ -1) >>> 0).toString(16).padStart(8, "0").toUpperCase();
+		}
 
 		// Other mod detection
 		const IsSMod = typeof w.ChatControlHead === "function";
@@ -160,8 +174,14 @@ setTimeout(
 		 * @returns {Function}
 		 */
 		function PatchFunction(fn, patches, checksum = null) {
-			const N = `[JMod] Patching ${fn.name}`;
 			let fn_str = fn.toString();
+			const crc = crc32(fn_str);
+			const N = `[JMod] Patching ${fn.name}[${crc}]`;
+			if (!checksum) {
+				console.info(`${N}: No checksum specified`);
+			} else if (!checksum.includes(crc)) {
+				console.warn(`${N}: Bad checksum`)
+			}
 			for (const k of Object.keys(patches)) {
 				if (!fn_str.includes(k)) {
 					console.warn(`${N}: Patch ${k} not applied`);
@@ -252,7 +272,7 @@ setTimeout(
 		} : {
 			"Asset[A].DynamicDescription(SourceCharacter || Player).toLowerCase()": `Asset[A].Description`,
 			"AssetGroup[A].Description.toLowerCase()": `AssetGroup[A].Description`
-		});
+		}, ["07FE4F52", "32105D0B"]);
 
 		function ChatRoomSendLocal(msg) {
 			ChatRoomMessage_o({
@@ -620,7 +640,7 @@ PoseOptionsAvailable - Player can select pose even outside of chatroom
 		const ExtendedItemDraw_o = w.ExtendedItemDraw;
 		const ExtendedItemDraw_patched = PatchFunction(ExtendedItemDraw_o, {
 			"DialogFindPlayer(DialogPrefix + Option.Name)": `JSON.stringify(Option.Property.Type)`
-		});
+		}, ["7C52D5A4", "3DB374E3"]);
 
 		w.ExtendedItemDraw = (...args) => {
 			if (j_Devel) {
@@ -641,7 +661,7 @@ PoseOptionsAvailable - Player can select pose even outside of chatroom
 		const DialogDrawPoseMenu_o = w.DialogDrawPoseMenu;
 		const DialogDrawPoseMenu_patch = PatchFunction(DialogDrawPoseMenu_o, {
 			'"Icons/Poses/" + PoseGroup[P].Name + ".png"': `"Icons/Poses/" + PoseGroup[P].Name + ".png", PoseGroup[P].Name`
-		});
+		}, ["EE8E3CC4", "4B972D11"]);
 
 		w.DialogDrawPoseMenu = () => {
 			if (j_Devel) {
@@ -830,7 +850,7 @@ PoseOptionsAvailable - Player can select pose even outside of chatroom
 		const ChatRoomDrawCharacterOverlay_o = w.ChatRoomDrawCharacterOverlay;
 		const ChatRoomDrawCharacterOverlay_patch = PatchFunction(ChatRoomDrawCharacterOverlay_o, IsSMod ? {} : {
 			'DrawImageResize("Icons/Small/FriendList.png", CharX + 375 * Zoom, CharY, 50 * Zoom, 50 * Zoom);': ""
-		});
+		}, ["1E1A1B60", "10CE4173"]);
 
 		w.ChatRoomDrawCharacterOverlay = (C, CharX, CharY, Zoom, Pos) => {
 			ChatRoomDrawCharacterOverlay_patch(C, CharX, CharY, Zoom, Pos);
