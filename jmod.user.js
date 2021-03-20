@@ -425,7 +425,7 @@ CheatAllow - Enable built-in cheats
 LoginMistressItems - Mistress-only items are always available
 LoginStableItems - Stable exam items are always available
 WardrobeIO - Import and export buttons in wardrobe for current clothes
-[testing] Message beeps - send messages along beeps to other mod users
+PoseOptionsAvailable - Player can select pose even outside of chatroom
 [testing] Typing indicator
 `);
 			} else {
@@ -638,6 +638,26 @@ WardrobeIO - Import and export buttons in wardrobe for current clothes
 			}
 			DialogDrawItemMenu_o(C);
 		}
+
+		const DialogDrawPoseMenu_o = w.DialogDrawPoseMenu;
+		const DialogDrawPoseMenu_patch = PatchFunction(DialogDrawPoseMenu_o, {
+			'"Icons/Poses/" + PoseGroup[P].Name + ".png"': `"Icons/Poses/" + PoseGroup[P].Name + ".png", PoseGroup[P].Name`
+		});
+
+		w.DialogDrawPoseMenu = () => {
+			if (j_Devel) {
+				return DialogDrawPoseMenu_patch();
+			} else {
+				return DialogDrawPoseMenu_o();
+			}
+		}
+
+		w.DialogSelfMenuOptions.forEach(opt => {
+			if (opt.Name === "Pose") {
+				opt.IsAvailable = () => true;
+				opt.Draw = w.DialogDrawPoseMenu;
+			}
+		});
 
 		//#endregion
 
