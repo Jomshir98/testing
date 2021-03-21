@@ -267,8 +267,8 @@ setTimeout(
 
 		const ChatRoomMessage_o = w.ChatRoomMessage;
 		const ChatRoomMessage_patch = PatchFunction(ChatRoomMessage_o, IsSMod ? {
-			"A.DynamicDescription(Source).toLowerCase()": `Asset[A].Description`,
-			"G.Description.toLowerCase()": `AssetGroup[A].Description`
+			"A.DynamicDescription(Source).toLowerCase()": `A.Description`,
+			"G.Description.toLowerCase()": `G.Description`
 		} : {
 			"Asset[A].DynamicDescription(SourceCharacter || Player).toLowerCase()": `Asset[A].Description`,
 			"AssetGroup[A].Description.toLowerCase()": `AssetGroup[A].Description`
@@ -693,7 +693,10 @@ PoseOptionsAvailable - Player can select pose even outside of chatroom
 					None: "None",
 					Typing: "Typing",
 					Emote: "Emote",
-					Whisper: "Whisper"
+					Whisper: "Whisper",
+					// SMod
+					Action: "Action",
+					Afk: 'Afk'
 				};
 
 				/**
@@ -856,6 +859,8 @@ PoseOptionsAvailable - Player can select pose even outside of chatroom
 			ChatRoomDrawCharacterOverlay_patch(C, CharX, CharY, Zoom, Pos);
 
 			ChatRoomDrawFriendList(C, Zoom, CharX, CharY);
+
+			if (IsSMod) return;
 
 			switch (C.ID == 0 ? ChatroomSM.Status : C.Status) {
 				case ChatroomSM.StatusTypes.Typing:
