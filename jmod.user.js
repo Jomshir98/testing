@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Jmod - Bondage Club
 // @namespace    jmod
-// @version      1.7.0
+// @version      1.7.1
 // @description  Jomshir's collection of changes and patches for Bondage Club
 // @author       jomshir98
 // @match        https://www.bondageprojects.elementfx.com/*/BondageClub/*
@@ -27,7 +27,7 @@ setTimeout(
 			return;
 		}
 
-		const version = "1.7.0";
+		const version = "1.7.1";
 
 		//#region Utils
 
@@ -671,10 +671,38 @@ PoseOptionsAvailable - Player can select pose even outside of chatroom
 			}
 		}
 
+		const DialogDrawExpressionMenu_o = w.DialogDrawExpressionMenu;
+
+		w.DialogDrawExpressionMenu = () => {
+			DialogDrawExpressionMenu_o();
+			if (j_Devel) {
+				for (let I = 0; I < DialogFacialExpressions.length; I++) {
+					const FE = DialogFacialExpressions[I];
+					const OffsetY = 185 + 100 * I;
+
+					if (MouseIn(20, OffsetY, 90, 90)) {
+						DrawText(JSON.stringify(FE.Group), 300, 950, "White");
+					}
+
+					if (I == DialogFacialExpressionsSelected) {
+						for (let j = 0; j < FE.ExpressionList.length; j++) {
+							const EOffsetX = 155 + 100 * (j % 3);
+							const EOffsetY = 185 + 100 * Math.floor(j / 3);
+							if (MouseIn(EOffsetX, EOffsetY, 90, 90)) {
+								DrawText(JSON.stringify(FE.ExpressionList[j]), 300, 950, "White");
+							}
+						}
+					}
+				}
+			}
+		}
+
 		w.DialogSelfMenuOptions.forEach(opt => {
 			if (opt.Name === "Pose") {
 				opt.IsAvailable = () => true;
 				opt.Draw = w.DialogDrawPoseMenu;
+			} else if (opt.Name === "Expression") {
+				opt.Draw = w.DialogDrawExpressionMenu;
 			}
 		});
 
