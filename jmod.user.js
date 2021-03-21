@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Jmod - Bondage Club
 // @namespace    jmod
-// @version      1.7.1
+// @version      1.7.2
 // @description  Jomshir's collection of changes and patches for Bondage Club
 // @author       jomshir98
 // @match        https://www.bondageprojects.elementfx.com/*/BondageClub/*
@@ -27,7 +27,7 @@ setTimeout(
 			return;
 		}
 
-		const version = "1.7.1";
+		const version = "1.7.2";
 
 		//#region Utils
 
@@ -294,10 +294,11 @@ setTimeout(
 		}
 
 		function j_SwapCharacterClothesAndBinds(C1, C2) {
-			const o1 = C1.Appearance.filter(i => j_IsCloth(i) || j_IsBind(i));
-			C1.Appearance = C1.Appearance.filter(i => !j_IsCloth(i) && !j_IsBind(i));
-			const o2 = C2.Appearance.filter(i => j_IsCloth(i) || j_IsBind(i));
-			C2.Appearance = C2.Appearance.filter(i => !j_IsCloth(i) && !j_IsBind(i));
+			const allowCosplay = !(C1.OnlineSharedSettings?.BlockBodyCosplay || C2.OnlineSharedSettings?.BlockBodyCosplay)
+			const o1 = C1.Appearance.filter(i => j_IsCloth(i, allowCosplay) || j_IsBind(i));
+			C1.Appearance = C1.Appearance.filter(i => !j_IsCloth(i, allowCosplay) && !j_IsBind(i));
+			const o2 = C2.Appearance.filter(i => j_IsCloth(i, allowCosplay) || j_IsBind(i));
+			C2.Appearance = C2.Appearance.filter(i => !j_IsCloth(i, allowCosplay) && !j_IsBind(i));
 			C1.Appearance = C1.Appearance.concat(o2);
 			C2.Appearance = C2.Appearance.concat(o1);
 			const tp = C1.Pose;
@@ -312,8 +313,9 @@ setTimeout(
 		w.j_SwapCharacterClothesAndBinds = j_SwapCharacterClothesAndBinds;
 
 		function j_CopyCharacterClothesAndBinds(TargetCharacter, SourceCharacter) {
-			TargetCharacter.Appearance = TargetCharacter.Appearance.filter(i => !j_IsCloth(i) && !j_IsBind(i));
-			const o2 = SourceCharacter.Appearance.filter(i => j_IsCloth(i) || j_IsBind(i));
+			const allowCosplay = !(TargetCharacter.OnlineSharedSettings?.BlockBodyCosplay || SourceCharacter.OnlineSharedSettings?.BlockBodyCosplay)
+			TargetCharacter.Appearance = TargetCharacter.Appearance.filter(i => !j_IsCloth(i, allowCosplay) && !j_IsBind(i));
+			const o2 = SourceCharacter.Appearance.filter(i => j_IsCloth(i, allowCosplay) || j_IsBind(i));
 			TargetCharacter.Appearance = TargetCharacter.Appearance.concat(o2);
 			TargetCharacter.Pose = SourceCharacter.Pose;
 
