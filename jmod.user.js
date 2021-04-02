@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Jmod - Bondage Club
 // @namespace    jmod
-// @version      1.7.2
+// @version      1.7.3
 // @description  Jomshir's collection of changes and patches for Bondage Club
 // @author       jomshir98
 // @match        https://www.bondageprojects.elementfx.com/*/BondageClub/*
@@ -27,7 +27,7 @@ setTimeout(
 			return;
 		}
 
-		const version = "1.7.2";
+		const version = "1.7.3";
 
 		//#region Utils
 
@@ -845,27 +845,28 @@ PoseOptionsAvailable - Player can select pose even outside of chatroom
 		});
 
 		function ChatRoomDrawFriendList(Char, Zoom, CharX, CharY) {
+			if (!Char) return;
 			let Color = "#ffffff";
 			let Friend = Char && Player.FriendList.includes(Char.MemberNumber);
 			let IsMutual = Friend;
 			if (IsSMod) {
+				if (Char.OnNServer == null) {
+					const Eyes = InventoryGet(Char, "Eyes");
+					const GUID = Eyes && Eyes.Property && Eyes.Property.GUID;
+					Char.OnNServer = (Char.ID == 0 && IsSMod) || GetGUID(Char) == GUID;
+				}
 				const DChar = ChatRoomData && ChatRoomData.Character && ChatRoomData.Character[ChatRoomCharacter.indexOf(Char)];
-				IsMutual = (Char && FriendListMutual.indexOf(Char.MemberNumber) >= 0) || Char.ID == 0;
-				const ClientActive = Char && IsCharacterOnNServer(Char);
+				IsMutual = (FriendListMutual.indexOf(Char.MemberNumber) >= 0) || (Char.ID == 0);
+				const ClientActive = Char.OnNServer;
 				const ServerActive = DChar && AdvancedServerMode && DChar.OnNonameServer == true;
-				if (ClientActive) {
-					Friend = true;
-					Color = "#840c24";
-				}
+				if (ClientActive) Color = "#840c24";
 				if (ServerActive) {
-					if (DChar && DChar.UnConnected == true) {
-						if (ClientActive) Color = "#0000ac";
-						else Color = "#00acac";
-					} else {
-						if (ClientActive) Color = "#00ac00";
-						else Color = "#acac00";
-					}
+					if (DChar && DChar.UnConnected == true)
+						Color = ClientActive ? "#0000ac" : "#00acac";
+					else
+						Color = ClientActive ? "#00ac00" : "#acac00";
 				}
+				Friend = Friend || ClientActive || ServerActive;
 			}
 			if (Char.JMod || Char.ID == 0) {
 				Friend = true;
