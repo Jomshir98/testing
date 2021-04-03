@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Jmod - Bondage Club
 // @namespace    jmod
-// @version      1.7.3
+// @version      1.7.4
 // @description  Jomshir's collection of changes and patches for Bondage Club
 // @author       jomshir98
 // @match        https://www.bondageprojects.elementfx.com/*/BondageClub/*
@@ -27,7 +27,7 @@ setTimeout(
 			return;
 		}
 
-		const version = "1.7.3";
+		const version = "1.7.4";
 
 		//#region Utils
 
@@ -570,7 +570,9 @@ PoseOptionsAvailable - Player can select pose even outside of chatroom
 
 		//#region Common patches
 
-		w.onbeforeunload = () => (!IsSMod ? "Are you sure you want to leave?" : undefined);
+		// TODO: Socket.io is broken as it unloads before this one
+		// Figure out how to make this fire even before socket.io
+		// w.onbeforeunload = () => (!IsSMod ? "Are you sure you want to leave?" : undefined);
 
 		w.AsylumEntranceCanWander = () => true;
 		w.CheatValidate = () => { };
@@ -634,6 +636,25 @@ PoseOptionsAvailable - Player can select pose even outside of chatroom
 
 		const o_ChatRoomCanLeave = w.ChatRoomCanLeave;
 		w.ChatRoomCanLeave = () => j_Allow || o_ChatRoomCanLeave();
+
+		function j_InvisEarbuds() {
+			const asset = Asset.find(A => A.Name === "BluetoothEarbuds");
+			if (!asset) return;
+			w.Player.Appearance = w.Player.Appearance.filter(A => A.Asset.Group.Name !== "ItemEars");
+			w.Player.Appearance.push({
+				Asset: asset,
+				Color: "Default",
+				Difficulty: -100,
+				Property: {
+					Type: "Light",
+					Effect: [],
+					Hide: AssetGroup.map(A => A.Name).filter(A => A !== "ItemEars")
+				}
+			});
+			w.CharacterRefresh(Player);
+			w.ChatRoomCharacterUpdate(Player);
+		}
+		w.j_InvisEarbuds = j_InvisEarbuds;
 
 		//#endregion
 
