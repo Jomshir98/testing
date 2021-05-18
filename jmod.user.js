@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Jmod - Bondage Club
 // @namespace    jmod
-// @version      1.7.4
+// @version      1.7.5
 // @description  Jomshir's collection of changes and patches for Bondage Club
 // @author       jomshir98
 // @match        https://www.bondageprojects.elementfx.com/*/BondageClub/*
@@ -27,7 +27,7 @@ setTimeout(
 			return;
 		}
 
-		const version = "1.7.4";
+		const version = "1.7.5";
 
 		//#region Utils
 
@@ -272,7 +272,7 @@ setTimeout(
 		} : {
 			"Asset[A].DynamicDescription(SourceCharacter || Player).toLowerCase()": `Asset[A].Description`,
 			"AssetGroup[A].Description.toLowerCase()": `AssetGroup[A].Description`
-		}, ["07FE4F52", "32105D0B"]);
+		}, ["07FE4F52", "32105D0B", "2C6E4EC3"]);
 
 		function ChatRoomSendLocal(msg) {
 			ChatRoomMessage_o({
@@ -663,7 +663,7 @@ PoseOptionsAvailable - Player can select pose even outside of chatroom
 		const ExtendedItemDraw_o = w.ExtendedItemDraw;
 		const ExtendedItemDraw_patched = PatchFunction(ExtendedItemDraw_o, {
 			"DialogFindPlayer(DialogPrefix + Option.Name)": `JSON.stringify(Option.Property.Type)`
-		}, ["7C52D5A4", "3DB374E3"]);
+		}, ["7C52D5A4", "3DB374E3", "486A52DF"]);
 
 		w.ExtendedItemDraw = (...args) => {
 			if (j_Devel) {
@@ -684,7 +684,7 @@ PoseOptionsAvailable - Player can select pose even outside of chatroom
 		const DialogDrawPoseMenu_o = w.DialogDrawPoseMenu;
 		const DialogDrawPoseMenu_patch = PatchFunction(DialogDrawPoseMenu_o, {
 			'"Icons/Poses/" + PoseGroup[P].Name + ".png"': `"Icons/Poses/" + PoseGroup[P].Name + ".png", PoseGroup[P].Name`
-		}, ["EE8E3CC4", "4B972D11"]);
+		}, ["EE8E3CC4", "4B972D11", "6145B7D7"]);
 
 		w.DialogDrawPoseMenu = () => {
 			if (j_Devel) {
