@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Jmod - Bondage Club
 // @namespace    jmod
-// @version      1.7.5
+// @version      1.7.6
 // @description  Jomshir's collection of changes and patches for Bondage Club
 // @author       jomshir98
 // @match        https://www.bondageprojects.elementfx.com/*/BondageClub/*
@@ -27,7 +27,7 @@ setTimeout(
 			return;
 		}
 
-		const version = "1.7.5";
+		const version = "1.7.6";
 
 		//#region Utils
 
@@ -877,7 +877,7 @@ PoseOptionsAvailable - Player can select pose even outside of chatroom
 					Char.OnNServer = (Char.ID == 0 && IsSMod) || GetGUID(Char) == GUID;
 				}
 				const DChar = ChatRoomData && ChatRoomData.Character && ChatRoomData.Character[ChatRoomCharacter.indexOf(Char)];
-				IsMutual = (FriendListMutual.indexOf(Char.MemberNumber) >= 0) || (Char.ID == 0);
+				IsMutual = Player.FriendList.isMutual(Char.MemberNumber) || Char.ID == 0;
 				const ClientActive = Char.OnNServer;
 				const ServerActive = DChar && AdvancedServerMode && DChar.OnNonameServer == true;
 				if (ClientActive) Color = "#840c24";
