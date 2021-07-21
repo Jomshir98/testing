@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Jmod - Bondage Club
 // @namespace    jmod
-// @version      1.7.6
+// @version      1.7.7
 // @description  Jomshir's collection of changes and patches for Bondage Club
 // @author       jomshir98
 // @match        https://www.bondageprojects.elementfx.com/*/BondageClub/*
@@ -27,7 +27,7 @@ setTimeout(
 			return;
 		}
 
-		const version = "1.7.6";
+		const version = "1.7.7";
 
 		//#region Utils
 
@@ -51,20 +51,6 @@ setTimeout(
 		const IsSMod = typeof w.ChatControlHead === "function";
 		const HasBondageClubTools = ServerSocket.listeners("ChatRoomMessage").some(i => i.toString().includes("window.postMessage"));
 
-		// Loading into already loaded club - clear some caches
-		DrawRunMap.clear();
-		DrawScreen = null;
-
-		/**
-		 * Utility function to add CSS in multiple passes.
-		 * @param {string} styleString
-		 */
-		function addStyle(styleString) {
-			const style = document.createElement("style");
-			style.textContent = styleString;
-			document.head.append(style);
-		}
-
 		if (w.TempCanvas === undefined) {
 			w.TempCanvas = document.createElement("canvas").getContext("2d");
 		}
@@ -82,14 +68,6 @@ setTimeout(
 			w.TempCanvas.fillStyle = "rgba(0,0,0," + Alpha + ")";
 			w.TempCanvas.fillRect(0, 0, Canvas.width, Canvas.height);
 			return w.TempCanvas.canvas;
-		}
-
-		function DrawImage(Source, X, Y, Alpha) {
-			var Img = DrawGetImage(Source);
-			if (!Img.complete) return false;
-			if (!Img.naturalWidth) return true;
-			MainCanvas.drawImage(DrawAlpha(Img, Alpha), X, Y);
-			return true;
 		}
 
 		function DrawImageResize(Source, X, Y, Width, Height, Alpha) {
@@ -272,7 +250,7 @@ setTimeout(
 		} : {
 			"Asset[A].DynamicDescription(SourceCharacter || Player).toLowerCase()": `Asset[A].Description`,
 			"AssetGroup[A].Description.toLowerCase()": `AssetGroup[A].Description`
-		}, ["07FE4F52", "32105D0B", "2C6E4EC3"]);
+		}, ["07FE4F52", "32105D0B", "2C6E4EC3", "8BF599EB"]);
 
 		function ChatRoomSendLocal(msg) {
 			ChatRoomMessage_o({
@@ -663,7 +641,7 @@ PoseOptionsAvailable - Player can select pose even outside of chatroom
 		const ExtendedItemDraw_o = w.ExtendedItemDraw;
 		const ExtendedItemDraw_patched = PatchFunction(ExtendedItemDraw_o, {
 			"DialogFindPlayer(DialogPrefix + Option.Name)": `JSON.stringify(Option.Property.Type)`
-		}, ["7C52D5A4", "3DB374E3", "486A52DF"]);
+		}, ["7C52D5A4", "3DB374E3", "486A52DF", "71FED847"]);
 
 		w.ExtendedItemDraw = (...args) => {
 			if (j_Devel) {
