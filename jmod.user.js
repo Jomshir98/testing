@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Jmod - Bondage Club
 // @namespace    jmod
-// @version      1.7.7
+// @version      1.8.0
 // @description  Jomshir's collection of changes and patches for Bondage Club
 // @author       jomshir98
 // @match        https://www.bondageprojects.elementfx.com/*/BondageClub/*
@@ -27,7 +27,7 @@ setTimeout(
 			return;
 		}
 
-		const version = "1.7.7";
+		const version = "1.8.0";
 
 		//#region Utils
 
@@ -308,7 +308,7 @@ setTimeout(
 				return;
 			}
 			ServerSend("ChatRoomChat", {
-				Content: "JModMsg",
+				Content: "BCXMsg",
 				Type: "Hidden",
 				Target,
 				Dictionary: { type, message }
@@ -320,7 +320,7 @@ setTimeout(
 		const hiddenMessageHandlers = new Map();
 
 		w.ChatRoomMessage = data => {
-			if (data?.Type === "Hidden" && data.Content === "JModMsg" && typeof data.Sender === "number") {
+			if (data?.Type === "Hidden" && data.Content === "BCXMsg" && typeof data.Sender === "number") {
 				if (data.Sender === w.Player.MemberNumber)
 					return;
 				const { type, message } = data.Dictionary;
@@ -812,12 +812,12 @@ PoseOptionsAvailable - Player can select pose even outside of chatroom
 			}
 		});
 
-		hiddenMessageHandlers.set("Hello", (src, data) => {
+		hiddenMessageHandlers.set("hello", (src, data) => {
 			for (const char of ChatRoomCharacter) {
 				if (char.MemberNumber === src) {
 					if (!char.JMod) {
 						char.JMod = true;
-						console.log(`${char.Name} is using JMod version ${data?.version || data}`);
+						console.log(`${char.Name} is using BCX version ${data?.version || data}`);
 					}
 				}
 			}
@@ -827,7 +827,7 @@ PoseOptionsAvailable - Player can select pose even outside of chatroom
 		});
 
 		function j_Announce(request = false) {
-			j_SendHiddenMessage("Hello", { version, request });
+			j_SendHiddenMessage("hello", { version: `J${version}`, request });
 		}
 
 		hiddenMessageHandlers.set("AntigarbleBlock", (src, data) => {
