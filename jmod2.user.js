@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Jmod - Bondage Club
+// @name         Jmod - Bondage Club 2
 // @namespace    jmod
 // @version      2.0.0
 // @description  Jomshir's collection of changes and patches for Bondage Club
