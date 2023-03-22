@@ -1,0 +1,9 @@
+{
+	"extends": "jomshir-test-common/tsconfig.base.json",
+	"compilerOptions": {
+		"types": ["@types/node"],
+		"noEmit": false,
+		"outDir": "./dist"
+	},
+	"include": ["./src/**/*"]
+}

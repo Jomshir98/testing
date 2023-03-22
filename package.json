@@ -1,0 +1,26 @@
+{
+	"private": true,
+	"packageManager": "pnpm@7.27.1",
+	"pnpm": {
+		"overrides": {
+			"@types/css-font-loading-module": "^0.0.8"
+		},
+		"updateConfig": {
+			"ignoreDependencies": [
+				"nanoid"
+			]
+		}
+	},
+	"scripts": {
+		"postinstall": "node .hooks/postinstall.cjs",
+		"ci": "pnpm run build && pnpm run lint && pnpm run type-check:test && pnpm run test --ci",
+		"lint": "pnpm -r --no-bail --parallel run lint",
+		"lint:fix": "pnpm -r --no-bail --parallel run lint:fix",
+		"type-check:test": "pnpm -r --no-bail --parallel run type-check:test",
+		"test": "pnpm -r --no-bail --parallel run test",
+		"build": "pnpm -r run build"
+	},
+	"dependencies": {
+		"js-yaml": "^4.1.0"
+	}
+}
