@@ -15,19 +15,6 @@ jobs:
       -
         name: Checkout
         uses: actions/checkout@v3
-      -
-        name: Docker meta
-        id: meta
-        uses: docker/metadata-action@v4
-        with:
-          images: |
-            ghcr.io/Jomshir98/Srv1
-            ghcr.io/Jomshir98/Srv2
-          # generate Docker tags based on the following events/attributes
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=sha
       # -
       #   name: Set up QEMU
       #   uses: docker/setup-qemu-action@v2
@@ -50,7 +37,26 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
       -
-        name: Build Srv1
+        name: Build
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          target: builder
+          push: false
+      -
+        name: Docker meta (Srv1)
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: |
+            ghcr.io/Jomshir98/Srv1
+          # generate Docker tags based on the following events/attributes
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha
+      -
+        name: Push Srv1
         uses: docker/build-push-action@v4
         with:
           context: .
@@ -59,7 +65,19 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
       -
-        name: Build Srv2
+        name: Docker meta (Srv2)
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: |
+            ghcr.io/Jomshir98/Srv2
+          # generate Docker tags based on the following events/attributes
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha
+      -
+        name: Push Srv2
         uses: docker/build-push-action@v4
         with:
           context: .
