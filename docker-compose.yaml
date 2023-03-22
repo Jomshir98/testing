@@ -1,0 +1,23 @@
+services:
+
+  srv1:
+    build:
+      context: .
+      target: srv1
+    restart: unless-stopped
+    environment:
+      - LOG_DIR=/logs
+      - SRV_NAME=Srv1
+    env_file:
+      - docker.env
+
+  srv2:
+    build:
+      context: .
+      target: srv2
+    restart: unless-stopped
+    environment:
+      - LOG_DIR=/logs
+      - SRV_NAME=Srv2
+    env_file:
+      - docker.env
