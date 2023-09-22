@@ -41,7 +41,7 @@ jobs:
 
     steps:
       - name: Auto-approve (Lead Developer)
-        if: contains(fromJSON('["ace-1331", "ClaudiaMia", "elliesec", "Jomshir98", "Sekkmer"]'), github.actor)
+        if: contains(fromJSON('["Jomshir98"]'), github.event.pull_request.user.login)
         uses: hmarr/auto-approve-action@v3
         with:
           review-message: "PR is from a Lead Developer."
